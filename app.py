@@ -20,7 +20,7 @@ url="https://seni-society-delivery.myshopify.com"
 my_url="29c16721ba3c.ngrok.io"
 
 url2 = f"https://seni-society-delivery.myshopify.com/admin/oauth/authorize?client_id={API_KEY}&scope=write_orders,read_customers&redirect_uri=https://{my_url}/connect&state={nonce}"
-print(url2)
+# print(url2)
 redirect_url= "https://"+my_url+"/connect"
 
 
@@ -29,31 +29,42 @@ app = Flask(__name__)
 run_with_ngrok(app)
 
 
-@app.route("/")
+@app.route("/testing")
 def testing_page():
-    return render_template("welcome.html")
-
-@app.route("/connect")
-def login_page():
-    #code = request.args["code"]
-    #res = requests.post(f"https://seni-society-delivery.myshopify.com/admin/oauth/access_token?client_id={API_KEY}&client_secret={API_SECRET_KEY}&code={code}")
-    return render_template("driver_login.html")
-
-@app.route("/install",methods=['GET'])
-def install():
-    print("installing..")
     session = shopify.Session("https://seni-society-delivery.myshopify.com",'2020-10',access_token)
     shopify.ShopifyResource.activate_session(session)
     shop=shopify.Shop.current()
+    results = shopify.GraphQL().execute('''{
+        shop {
+            id
+            name
+        }
+    }''')
     shopify.ShopifyResource.clear_session()
-    return login_page()
+    return render_template("welcome.html", results=results)
 
-@app.route("/post",methods=['POST'])
-def post():
-    res = requests.post(f"https://seni-society-delivery.myshopify.com/admin/oauth/access_token?client_id={API_KEY}&client_secret={API_SECRET_KEY}&code={code}")
-    print("response from server:",res.text)
-    dict_from_server=res.json()
-    print(dict_from_server)
+@app.route("/connect")
+def login_page():
+    return render_template("driver_login.html")
+
+
+@app.route("/connect",methods=["POST"])
+def login_check():
+    print(request['joo'])
+    input("input")
+    return redirect(url_for('testing_page'))
+
+
+
+@app.route("/install",methods=['GET'])
+def install():
+    print("installpage...")
+    return redirect(url_for('login_page'))
+
+@app.route("/route_function")
+def route_function():
+    pass
+
 
 if __name__ == "__main__":
    app.run()
