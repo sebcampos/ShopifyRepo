@@ -4,7 +4,7 @@ import binascii
 import os
 
 
-app_url = input("url of site")
+app_url = ""
 
 shopify.Session.setup(api_key=API_KEY, secret=API_SECRET_KEY)
 

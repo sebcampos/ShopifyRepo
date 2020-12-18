@@ -3,15 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing</title>
+    <title>Login Page</title>
     <link
     rel="stylesheet"
     href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-  />
+    />
+    <link rel="stylesheet", href="css/SensiCss.css">
 </head>
 <body>
-    <div class="jumbotron text-center">
-        <h1>Sensi Socitey Driver Login</h1>
+    <div class="jumbotron">
+        <h2><i>Sensi Socitey Driver Login<i></h1>
+
+    </div>
+    <div class="container center">
+        <br><br><br><br>
+        <form>
+            <div class="form-group">
+              <label style="color:white"  for="exampleInputEmail1">Email address</label>
+              <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
+              <small id="emailHelp" class="form-text text-muted"></small>
+            </div>
+            <div class="form-group">
+              <label style="color:white"  for="exampleInputPassword1">Password</label>
+              <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+            </div>
+            <br>
+            <div class="form-group">
+                <button class="center btn btn-primary" type="submit" value="Submit">Submit</button>
+            </div>
+        
     </div>
 </body>
 </html>
