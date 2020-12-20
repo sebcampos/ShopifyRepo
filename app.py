@@ -5,6 +5,8 @@ import requests
 import shopify
 import binascii
 import os
+import time
+import pprint
 
 
 
@@ -17,7 +19,7 @@ nonce = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
 
 url="https://seni-society-delivery.myshopify.com"
 
-my_url="29c16721ba3c.ngrok.io"
+my_url="8aefb28dc270.ngrok.io"
 
 url2 = f"https://seni-society-delivery.myshopify.com/admin/oauth/authorize?client_id={API_KEY}&scope=write_orders,read_customers&redirect_uri=https://{my_url}/connect&state={nonce}"
 # print(url2)
@@ -35,31 +37,40 @@ def testing_page():
     shopify.ShopifyResource.activate_session(session)
     shop=shopify.Shop.current()
     results = shopify.GraphQL().execute('''{
-        shop {
-            id
-            name
+        products(first:3) {
+            edges {
+                node {
+                    id
+                    handle
+                    variants(first:3) {
+                        edges {
+                            node {
+                                id
+                                displayName
+                            }
+                        }
+                    }
+                }
+            }
         }
+
     }''')
     shopify.ShopifyResource.clear_session()
-    return render_template("welcome.html", results=results)
+    return render_template("welcome.html",result=results)
 
-@app.route("/connect")
+@app.route("/connect", methods=['GET','POST'])
 def login_page():
-    return render_template("driver_login.html")
-
-
-@app.route("/connect",methods=["POST"])
-def login_check():
-    print(request['joo'])
-    input("input")
-    return redirect(url_for('testing_page'))
-
-
-
+    render_template("driver_login.html") 
+    if request.method == "POST":
+        #Cheking login credentials
+        if request.form["name"] == "user@example.com" and request.form["password"] == "password789456123":
+            return testing_page()
+        return "<h1>Invalid credentials reload page<h1>"
+    return render_template("driver_login.html") 
 @app.route("/install",methods=['GET'])
 def install():
     print("installpage...")
-    return redirect(url_for('login_page'))
+    return login_page()
 
 @app.route("/route_function")
 def route_function():
@@ -69,3 +80,6 @@ def route_function():
 if __name__ == "__main__":
    app.run()
 
+#TODO
+
+# - fix redirect issue test on phone to see if all pages a re available
