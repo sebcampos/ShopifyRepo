@@ -19,7 +19,7 @@ nonce = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
 
 url="https://seni-society-delivery.myshopify.com"
 
-my_url="8aefb28dc270.ngrok.io"
+my_url="7cdaa8522160.ngrok.io"
 
 url2 = f"https://seni-society-delivery.myshopify.com/admin/oauth/authorize?client_id={API_KEY}&scope=write_orders,read_customers&redirect_uri=https://{my_url}/connect&state={nonce}"
 # print(url2)
@@ -36,25 +36,36 @@ def testing_page():
     session = shopify.Session("https://seni-society-delivery.myshopify.com",'2020-10',access_token)
     shopify.ShopifyResource.activate_session(session)
     shop=shopify.Shop.current()
-    results = shopify.GraphQL().execute('''{
-        products(first:3) {
-            edges {
-                node {
-                    id
-                    handle
-                    variants(first:3) {
-                        edges {
-                            node {
-                                id
-                                displayName
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    }''')
+    
+    # results = shopify.GraphQL().execute('''query {
+    #     orders(first:20, reverse:true, query:"fulfillment_status:unshipped") {
+    #         edges {
+    #             node {
+    #                 id
+    #                 name
+    #                 displayFulfillmentStatus
+    #                 createdAt
+    #                 displayAddress {
+    #                     address1
+    #                     address2
+    #                     city
+    #                     zip
+    #                     province
+    #                     provinceCode
+    #                     country
+    #                     countryCodeV2
+    #                     latitude
+    #                     longitude
+    #                     id
+    #                     name
+    #                     phone
+    #                 }
+    #             }
+    #         }
+    #     }
+    # }
+    # ''')
+    results='Tesing Stage'
     shopify.ShopifyResource.clear_session()
     return render_template("welcome.html",result=results)
 
@@ -69,8 +80,8 @@ def login_page():
     return render_template("driver_login.html") 
 @app.route("/install",methods=['GET'])
 def install():
-    print("installpage...")
-    return login_page()
+    print("intalling...")
+    return "Install Page"
 
 @app.route("/route_function")
 def route_function():

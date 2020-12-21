@@ -48,3 +48,7 @@
 # Server set up process
 - start ngrok http 5000
 - start flask on http 500
+
+
+# GraphQL query notes
+- link for order object https://shopify.dev/docs/admin-api/graphql/reference/orders/order#fields-2020-10
