@@ -3,19 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+    rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
     <title>Welcome Page</title>
 </head>
 <body>
-    <div>
-        <h1>Welcome!</h1>
-    </div>
-    <div>
-        <tbody>
-            <tr>
-                <p>{{result}}</p>
-            </tr>
-        </tbody>
-    </div>
+    <div class="container">
+        <div class="container-fluid">
+            <div>
+                <h1>Welcome {{user}}!</h1>
+            </div>
+            <h2>input header</h2>
+            {% for row in df.iterrows() %}
+            <div class="row">
+                <div class="col-xs-16 col-md-4">{{ row[1][0] }}</div>
+                <div class="col-xs-14 col-md-2">{{ row[1][1] }}</div>
+                <div class="col-xs-12 col-md-1">{{ row[1][2] }}</div>
+            </div>
+            {% endfor %}
+        </div>
+            
+                
 
 </body>
 </html>
