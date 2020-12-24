@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+    rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+    <link rel='stylesheet' href='../static/css/driver_inventory.css'/>
+    <title>Welcome Page</title>
+</head>
+<body>
+    <div class="container">
+        <div class="container-fluid">
+        {% block navbar %}
+        {{nav.nav_bar.render()}}
+        {% endblock %}
+            <h1>Welcome {{user}}!</h1>
+            <h2>Search Fields</h2>
+            <input id="myInput" type="text" onkeyup="myFunction()" placeholder="Search By Display Name..">
+            <input id="myInput_2" type="text" onkeyup="myFunction_2()" placeholder="Search By SKU..">
+                <table id="myTable" class="table">
+                    <tr class="table__header">
+                        <th class="table__cell">Display Name</th>
+                        <th class="table__cell">SKU</th>
+                        <th class="table__cell">Driver Inventory</th>
+                    </tr>
+                    {% for row in df.iterrows() %}
+                    <tr class="table__row">
+                        <td class="table__cell">{{ row[1][0] }}</td>
+                        <td class="table__cell">{{ row[1][1] }}</td>
+                        <td class="table__cell">{{ row[1][2] }}</td>
+                    </tr>
+                    {% endfor %}
+            </table>
+        </div>
+    </div>
+    <script src="../static/js/table_filter.js"></script>
+</body>
+</html>
