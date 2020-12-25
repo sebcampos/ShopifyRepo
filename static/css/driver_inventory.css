@@ -6,6 +6,7 @@ html,body{
 .table {
 
     background-color: #f5f5f5;
+    table-layout: fixed;
 }
 
 .table__row:nth-child(even) {
@@ -17,7 +18,7 @@ html,body{
 }
 
 .table__cell {
-    padding: 8px;
+    padding: 3px;
 }
 
 
