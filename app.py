@@ -56,8 +56,8 @@ def order_page():
     if token not in token_lst:
         return '<h1>refresh session</h1>'
     raw_df = orders_api_call_1()
-    # df = raw_df.loc[raw_df["order_date"] == today_str][["order_ids","fulfillment_status","order_time_raw","name"]]
-    df = [["order_ids","fulfillment_status","order_time_raw","name"]]
+    #df = raw_df.loc[raw_df["order_date"] == today_str][["order_ids","fulfillment_status","order_time_raw","name"]]
+    df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200))
@@ -69,13 +69,24 @@ def order_details():
     user = request.args.get('user')
     item = request.args.get('item')
     raw_df = orders_api_call()
-    df = raw_df.loc[raw_df.order_id == item]["line_items"]
-    lst = df.item()
+    line_items = raw_df.loc[raw_df.order_id == item]["line_items"].item()
+    customer_info_dict = raw_df.loc[raw_df.order_id == item]["customer_data"].item()
+    customer_info_dict.pop("id")
+    order_price = raw_df.loc[raw_df.order_id == item]["order_price"].item()
     if token not in token_lst:
         return '<h1>refresh session</h1>'
     if request.method == "POST":
-        return "posted"
-    return render_template("orders_details.html",item=item , lst=lst)
+        df = raw_df.loc[raw_df.order_id == item]
+        df["line_items"] = str(df["line_items"])
+        df["customer_data"] = str(df["customer_data"])
+        df["accepted"] = datetime.datetime.now()
+        df["completed"] = None 
+        df.to_sql(f"{user}_orders",con=conn,if_exists="append")
+        conn.commit()
+        df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+        return df.to_html()
+        
+    return render_template("orders_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)
 
 
 @app.route("/driver_inventory", methods=["GET","POST"])
