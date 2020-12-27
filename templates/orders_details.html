@@ -31,7 +31,9 @@
                 </div>
                 <div class="col-xs-6">
                     {% for i in lst %}
+                    <hr></hr>
                     <h2>{{ i["node"]['product']["title"]}}</h2>
+                    <hr></hr>
                     <h4> SKU: {{ i["node"]['sku'] }}</h4>
                     <h3>{{ i["node"]['product']['productType'] }} Quantity: {{ i["node"]['quantity'] }}</h3>
                     <p>{{ i["node"]["product"]["description"] }}</p>

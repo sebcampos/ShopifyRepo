@@ -14,13 +14,16 @@ nav = Nav(app)
 
 
 token_lst = []
+user_lst = []
+
 
 @nav.navigation('nav_bar')
 def create_navbar():
     inventory_view = View('Inventory', 'driver_inventory',user=request.args.get('user'),token=request.args.get('token'))
     orders_view = View('Unfulfilled Orders','order_page',user=request.args.get('user'), token=request.args.get('token'))
-
-    return Navbar('Mysite', inventory_view, orders_view)
+    user_orders = View('User Orders','user_orders',user=request.args.get('user'), token=request.args.get('token'))
+    logout = View('Logout','login_page',user=request.args.get('user'), token=request.args.get('token'))
+    return Navbar('Mysite', inventory_view, orders_view, user_orders, logout)
 
 @app.route('/webhook', methods=['POST'])
 def handle_webhook():
@@ -28,6 +31,19 @@ def handle_webhook():
     verified = verify_webhook(data, request.headers.get('X-Shopify-Hmac-SHA256'))
 
 
+
+
+@app.route("/user_orders", methods=['GET','POST'])
+def user_orders():
+    session = verify_session(token_lst,user_lst)
+    if session == False:
+        return '<h1>refresh session</h1>'
+    user = session[0]
+    token = session[1]
+    df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    #return render_template("user_orders.html", user=user, df=df)
+    return df.to_html()
+    
 
 @app.route("/", methods=['GET','POST'])
 def login_page():
@@ -40,6 +56,9 @@ def login_page():
             user = request.form["name"]
             token= "".join([str(random.randint(1,30)) for i in range(0,5)])
             token_lst.append(token)
+            user_lst.append(user)
+            print(token_lst)
+            print(user_lst)
             return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
         elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
             return admin_page(request.form["name"])
@@ -51,13 +70,14 @@ def login_page():
 
 @app.route("/todays_orders",methods=["GET","POST"])
 def order_page():
-    token = request.args.get('token')
-    user = request.args.get('user')
-    if token not in token_lst:
+    session = verify_session(token_lst,user_lst)
+    if session == False:
         return '<h1>refresh session</h1>'
+    user = session[0]
+    token = session[1]
     raw_df = orders_api_call_1()
-    #df = raw_df.loc[raw_df["order_date"] == today_str][["order_ids","fulfillment_status","order_time_raw","name"]]
-    df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
+    df = raw_df.loc[(raw_df["order_date"] == today_str) | (raw_df["order_date"] == yesterday_str) | (raw_df["order_date"] == tomorrow_str)][["order_ids","fulfillment_status","order_time_raw","name"]]
+    #df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200))
@@ -65,38 +85,37 @@ def order_page():
 
 @app.route("/todays_orders/order_details",methods=["POST","GET"])
 def order_details():    
-    token = request.args.get('token')
-    user = request.args.get('user')
+    session = verify_session(token_lst,user_lst)
+    if session == False:
+        return '<h1>refresh session</h1>'
+    user = session[0]
+    token = session[1]
     item = request.args.get('item')
     raw_df = orders_api_call()
     line_items = raw_df.loc[raw_df.order_id == item]["line_items"].item()
     customer_info_dict = raw_df.loc[raw_df.order_id == item]["customer_data"].item()
     customer_info_dict.pop("id")
     order_price = raw_df.loc[raw_df.order_id == item]["order_price"].item()
-    if token not in token_lst:
-        return '<h1>refresh session</h1>'
     if request.method == "POST":
         df = raw_df.loc[raw_df.order_id == item]
         df["line_items"] = str(df["line_items"])
         df["customer_data"] = str(df["customer_data"])
         df["accepted"] = datetime.datetime.now()
         df["completed"] = None 
-        df.to_sql(f"{user}_orders",con=conn,if_exists="append")
+        df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
         conn.commit()
         df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-        return df.to_html()
-        
+        return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200))
     return render_template("orders_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)
 
 
 @app.route("/driver_inventory", methods=["GET","POST"])
 def driver_inventory():
-    token = request.args.get('token')
-    if token not in token_lst:
-        return '<h1>STOP</h1>'
-    user = request.args.get('user')
-    if user == "":
-        return "Invalid request"
+    session = verify_session(token_lst,user_lst)
+    if session == False:
+        return '<h1>refresh session</h1>'
+    user = session[0]
+    token = session[1]
     df = pandas.read_sql(f"select * from {user}", con=conn)
     df.drop("index",axis=1,inplace=True)
     if request.method == "POST":
@@ -115,17 +134,18 @@ def admin_page(user):
 
 @app.route("/description", methods=["GET","POST"])
 def item_details():
-    token = request.args.get('token')
-    if token not in token_lst:
+    session = verify_session(token_lst,user_lst)
+    if session == False:
         return '<h1>refresh session</h1>'
-    user = request.args.get('user')
+    user = session[0]
+    token = session[1]
     item = request.args.get('item')
     df = pandas.read_sql(f"select * from {user} where display_name='{item}'", con=conn)
     if request.method == "POST":
         new_val = request.form["updateme"]
         conn.execute(f"UPDATE {user} set inventory_quantity={new_val} WHERE display_name='{item}'")
         conn.commit()
-        return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
+        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
     return render_template("update_items.html",df=df)
 
 
