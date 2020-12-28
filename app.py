@@ -12,7 +12,7 @@ run_with_ngrok(app)
 
 nav = Nav(app)
 
-
+#TODO turn this into key value pair dictionary
 token_lst = []
 user_lst = []
 
@@ -40,10 +40,32 @@ def user_orders():
         return '<h1>refresh session</h1>'
     user = session[0]
     token = session[1]
+    if request.method == "POST":
+        item = request.form["item"]
+        return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200))
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-    #return render_template("user_orders.html", user=user, df=df)
-    return df.to_html()
+    html_df = df[["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
+    return render_template("user_orders.html", user=user, df=html_df)
+
+@app.route("/user_orders/details", methods=['GET','POST'])
+def user_orders_details():
+    session = verify_session(token_lst,user_lst)
+    if session == False:
+        return '<h1>refresh session</h1>'
+    user = session[0]
+    token = session[1]
+    item = request.args.get('item')
+    raw_df,line_items,customer_info_dict,order_price = order_details_parser(item)
+    print(type(customer_info_dict))
+    dict(customer_info_dict)
+    if request.method == "POST":
+        conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}'")
+        conn.commit()
+        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+    return render_template("user_order_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)    
     
+
+
 
 @app.route("/", methods=['GET','POST'])
 def login_page():
@@ -64,7 +86,7 @@ def login_page():
             return admin_page(request.form["name"])
         return "<h1>Invalid credentials reload page<h1>"
     return render_template("driver_login.html") 
-
+    
 
 
 
@@ -83,7 +105,7 @@ def order_page():
         return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200))
     return render_template('todays_orders.html',df=df)
 
-@app.route("/todays_orders/order_details",methods=["POST","GET"])
+@app.route("/todays_orders/order_details",methods=["GET","POST"])
 def order_details():    
     session = verify_session(token_lst,user_lst)
     if session == False:
@@ -91,21 +113,13 @@ def order_details():
     user = session[0]
     token = session[1]
     item = request.args.get('item')
-    raw_df = orders_api_call()
-    line_items = raw_df.loc[raw_df.order_id == item]["line_items"].item()
-    customer_info_dict = raw_df.loc[raw_df.order_id == item]["customer_data"].item()
-    customer_info_dict.pop("id")
-    order_price = raw_df.loc[raw_df.order_id == item]["order_price"].item()
+    raw_df,line_items,customer_info_dict,order_price = order_details_parser(item)
     if request.method == "POST":
-        df = raw_df.loc[raw_df.order_id == item]
-        df["line_items"] = str(df["line_items"])
-        df["customer_data"] = str(df["customer_data"])
-        df["accepted"] = datetime.datetime.now()
-        df["completed"] = None 
+        df = clean_orders_df(raw_df,item)
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
         conn.commit()
         df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-        return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200))
+        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
     return render_template("orders_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)
 
 
@@ -143,9 +157,9 @@ def item_details():
     df = pandas.read_sql(f"select * from {user} where display_name='{item}'", con=conn)
     if request.method == "POST":
         new_val = request.form["updateme"]
-        conn.execute(f"UPDATE {user} set inventory_quantity={new_val} WHERE display_name='{item}'")
+        conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE display_name='{item}'")
         conn.commit()
-        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+        return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
     return render_template("update_items.html",df=df)
 
 
