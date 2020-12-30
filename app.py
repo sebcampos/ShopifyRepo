@@ -12,10 +12,9 @@ run_with_ngrok(app)
 
 nav = Nav(app)
 
-#TODO turn this into key value pair dictionary
-token_lst = []
-user_lst = []
-admin_session = {"True":""}
+admin_session = {}
+confirmed_session = {}
+
 
 @nav.navigation('nav_bar')
 def create_navbar():
@@ -32,7 +31,7 @@ def handle_webhook():
 
 @app.route("/user_orders", methods=['GET','POST'])
 def user_orders():
-    users_session = verify_session(token_lst,user_lst)
+    users_session = verify_session(confirmed_session)
     if users_session == False:
         return '<h1>refresh session</h1>'
     user = users_session[0]
@@ -41,25 +40,34 @@ def user_orders():
         item = request.form["item"]
         return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200))
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
+    df.completed = df.completed.apply(lambda x: str(x).split(".")[0])
     html_df = df[["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
     return render_template("user_orders.html", user=user, df=html_df)
 
 @app.route("/user_orders/details", methods=['GET','POST'])
 def user_orders_details():
-    users_session = verify_session(token_lst,user_lst)
+    users_session = verify_session(confirmed_session)
     if users_session == False:
         return '<h1>refresh session</h1>'
     user = users_session[0]
     token = users_session[1]
     item = request.args.get('item')
     try:
-        raw_df,line_items,customer_info_dict,order_price = order_details_parser(item)
+        raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True) 
     except:
-        line_items,customer_info_dict,order_price = [], {}, "fufilled"
+        graphQL_id = orders_api_call().loc[raw_df.order_id == item]["shopify_id"].item()
+        line_items,customer_info_dict,order_price = [], {}, "  Order has been fulfilled or canceled"
     if request.method == "POST":
-        conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
-        conn.commit()
-        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+        if list(request.form.keys())[0] == 'sku':
+            conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
+            conn.commit()
+            fufill_order(graphQL_id)
+            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+        if list(request.form.keys())[0] == 'name':
+            send_canned_text("30",customer_info_dict["name"], user, order_price )
+            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+
     return render_template("user_order_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)    
     
 @app.route("/", methods=['GET','POST'])
@@ -72,20 +80,17 @@ def login_page():
         if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
             user = request.form["name"]
             token= "".join([str(random.randint(1,30)) for i in range(0,5)])
-            token_lst.append(token)
-            user_lst.append(user)
-            print(token_lst)
-            print(user_lst)
+            confirmed_session[user] = token
+            print(confirmed_session)
             return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
         elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
             return admin_page(request.form["name"])
         return "<h1>Invalid credentials reload page<h1>"
     return render_template("driver_login.html") 
     
-
 @app.route("/todays_orders",methods=["GET","POST"])
 def order_page():
-    users_session = verify_session(token_lst,user_lst)
+    users_session = verify_session(confirmed_session)
     if users_session == False:
         return '<h1>refresh session</h1>'
     user = users_session[0]
@@ -99,14 +104,14 @@ def order_page():
     return render_template('todays_orders.html',df=df)
 
 @app.route("/todays_orders/order_details",methods=["GET","POST"])
-def order_details():    
-    users_session = verify_session(token_lst,user_lst)
+def order_details():
+    users_session = verify_session(confirmed_session)
     if users_session == False:
         return '<h1>refresh session</h1>'
     user = users_session[0]
     token = users_session[1]
     item = request.args.get('item')
-    raw_df,line_items,customer_info_dict,order_price = order_details_parser(item)
+    raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
     if request.method == "POST":
         df = clean_orders_df(raw_df,item)
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
@@ -115,10 +120,9 @@ def order_details():
         return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
     return render_template("orders_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)
 
-
 @app.route("/driver_inventory", methods=["GET","POST"])
 def driver_inventory():
-    users_session = verify_session(token_lst,user_lst)
+    users_session = verify_session(confirmed_session)
     if users_session == False:
         return '<h1>refresh session</h1>'
     user = users_session[0]
@@ -139,16 +143,18 @@ def admin_page(user):
 
 @app.route("/description", methods=["GET","POST"])
 def item_details():
-    users_session = verify_session(token_lst,user_lst)
+    users_session = verify_session(confirmed_session)
     if users_session == False:
         return '<h1>refresh session</h1>'
     user = users_session[0]
     token = users_session[1]
     item = request.args.get('item')
-    df = pandas.read_sql(f"select * from {user} where display_name='{item}'", con=conn)
+    item = request.args.get('item').split("__")[0]
+    sku = request.args.get('item').split("__")[1]
+    df = pandas.read_sql(f"select * from {user} where display_name='{item}' and sku='{sku}'", con=conn)
     if request.method == "POST":
         new_val = request.form["updateme"]
-        conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE display_name='{item}'")
+        conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE display_name='{item}'  and sku='{sku}'")
         conn.commit()
         return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
     return render_template("update_items.html",df=df)

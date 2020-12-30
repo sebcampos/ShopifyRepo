@@ -30,7 +30,7 @@
                     </tr>
                     {% for row in df.iterrows() %}
                     <tr class="table__row">
-                        <td class="table__cell">{{ row[1][0] }}  <form action='#' method="POST"><button name="item" class="center btn btn-primary" type="submit" value="{{ row[1][0] }}">select</button></form></td>
+                        <td class="table__cell">{{ row[1][0] }}  <form action='#' method="POST"><button name="item" class="center btn btn-primary" type="submit" value="{{ row[1][0] }}__{{ row[1][1] }}">select</button></form></td>
                         <td class="table__cell">{{ row[1][1] }}</td>
                         <td class="table__cell">{{ row[1][2] }}</td>
                     </tr>
