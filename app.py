@@ -1,9 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template, session
-from flask_ngrok import run_with_ngrok
-from flask_nav import Nav
-from flask_nav.elements import Navbar, Subgroup, View
 from parsedata import *
-import random
 
 
 app = Flask(__name__)
@@ -56,7 +51,6 @@ def user_orders_details():
     try:
         raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True) 
     except:
-        graphQL_id = orders_api_call().loc[raw_df.order_id == item]["shopify_id"].item()
         line_items,customer_info_dict,order_price = [], {}, "  Order has been fulfilled or canceled"
     if request.method == "POST":
         if list(request.form.keys())[0] == 'sku':
