@@ -1,7 +1,5 @@
 config.py
 __pycache__
 conf.py
-parsedata.py
-database.db
 notes.md
 twilio_config.py
