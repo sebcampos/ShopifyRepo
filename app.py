@@ -145,10 +145,10 @@ def item_details():
     item = request.args.get('item')
     item = request.args.get('item').split("__")[0]
     sku = request.args.get('item').split("__")[1]
-    df = pandas.read_sql(f"select * from {user} where display_name='{item}' and sku='{sku}'", con=conn)
+    df = pandas.read_sql(f"select * from {user} where sku='{sku}'", con=conn)
     if request.method == "POST":
         new_val = request.form["updateme"]
-        conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE display_name='{item}'  and sku='{sku}'")
+        conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE sku='{sku}'")
         conn.commit()
         return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
     return render_template("update_items.html",df=df)
