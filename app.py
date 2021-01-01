@@ -71,7 +71,8 @@ def login_page():
     render_template("driver_login.html") 
     if request.method == "POST":
         #Cheking login credentials
-        if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
+        # if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
+        if request.form["name"] in username_lst:
             user = request.form["name"]
             token= "".join([str(random.randint(1,30)) for i in range(0,5)])
             confirmed_session[user] = token
