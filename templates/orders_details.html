@@ -27,6 +27,16 @@
                             </tr>
                         </tbody>
                     </table>
+                    {% endfor %}
+                    {% for i in item_check_dict%} 
+                    <table class ="table">
+                        <tbody>
+                            <tr class="table__row">
+                                <td class="table__cell">{{ i }}</td>
+                                <td class="table__cell">{{ item_check_dict[i] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                     {% endfor %} 
                 </div>
                 <div class="col-xs-6">

@@ -18,7 +18,7 @@ import time
 import os
 from twilio.rest import Client
 import twilio_config
-import splinter
+from splinter import Browser
 
 
 #today date string:
@@ -157,16 +157,38 @@ def verify_session(confirmed_session):
 
 
 #Collect items data
-def items_api_call(): #<-- rename this 
+def items_data_call(update = False): #<-- rename this 
+    
+    if update == True:
+        browser = Browser('firefox', executable_path="/usr/local/bin/geckodriver", headless=False)
+        url = 'https://accounts.shopify.com/store-login'
+        shop_domain = 'seni-society-delivery.myshopify.com'
+        account_email = 'mr.robot7823465@gmail.com'
+        account_password = '!Shopifysucks1'
+        browser.visit(url)
+        browser.find_by_id("shop_domain").fill(shop_domain)
+        browser.find_by_name("commit").click()
+        browser.find_by_id("account_email").fill(account_email)
+        browser.find_by_name("commit").click()
+        browser.find_by_id("account_password").fill(account_password)
+        browser.find_by_name("commit").click()
+        browser.find_by_text('Products').click()
+        browser.find_by_text('Export').click()
+        time.sleep(30)
+        browser.quit()
+        #raw_df.to_sql("items_data",con=conn, index=False)
+        return f"products csv sent to {account_email}"
+
+    
+    
     #replace with a webscrape to collect this csv
     raw_df = pandas.read_csv("products_export_1.csv")
-
+    
     raw_df.dropna(how="all",inplace=True)
 
     raw_df.columns = [i.replace(" ","-") for i in raw_df.columns] 
 
-    #raw_df.to_sql("items_data",con=conn, index=False)
-    
+
     lst = []
     for i in raw_df.columns:
         column = []
@@ -189,7 +211,7 @@ def create_user(username,password):
     if username in username_lst:
         return f"Aborted:\nUsername {username} already exists"
 
-    new_user_df = items_api_call()
+    new_user_df = items_data_call()
     #set inventory to 0
     new_user_df["inventory_quantity"] = 0
     
@@ -236,7 +258,7 @@ def order_details_parser(item,v2=False):
 
     return raw_df,line_items,customer_info_dict,order_price
 
-#TODO create functions to update Shopify Api, update driver inventory, print/email/text data, account for "CLAIMED" orders , create routing function 
+#TODO  print/email/text data, account for "CLAIMED" orders , create routing function 
 
 def send_canned_text(eta,customer_name,user,delivery_total):
     message_to_send = f'''ETA {eta} min\nHello {customer_name} !  This is {user} with The Sensi Society\nDelivery Total {delivery_total} cash or cash app\nPayments accepted via cash or Cash App: (+$5) Send to $SensiSociety\nDelivery drivers don’t carry change for safety purposes.\nPlease have ID READY upon delivery.\n🙏\nPS: HONESTLY the biggest help you can do is writing a review for us :)\nhttps://g.page/higher-ground-delivery/review?gm\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
@@ -332,14 +354,30 @@ def fufill_order(shopify_order_id):
     return "fulfilled and paid"
 
 #update user sqlite table after order is completed
-def update_user_inventory(line_items,user):
+def update_user_inventory(line_items,user,check=False):
     sku_quantity_dict = {}
     for i in line_items:
         sku_quantity_dict[ i["node"]["sku"] ] = i["node"]["quantity"]
     df = pandas.read_sql(f"select * from {user}",con=conn)
+    
+    if check == True:
+        new_dict = {}
+        for i in sku_quantity_dict:
+            if i in df.sku.tolist():
+                quantity = sku_quantity_dict[i]
+                if df.loc[df.sku == i][["inventory_quantity"]].item() >= quantity:
+                    new_dict[i] = True
+                else:
+                    new_dict[i] = False
+        return new_dict
+                
+
+    
+    
     for i in sku_quantity_dict:
-        print(i)
         if i in df.sku.tolist():
             quantity = sku_quantity_dict[i]
             df.loc[df.sku == i, "inventory_quantity"] -= quantity
-    df.to_sql(f"{user}", con=conn, index=False, if_exists="replace")
+    return df.to_sql(f"{user}", con=conn, index=False, if_exists="replace")
+
+

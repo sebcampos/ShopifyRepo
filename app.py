@@ -1,6 +1,5 @@
 from parsedata import *
 
-
 app = Flask(__name__)
 
 run_with_ngrok(app)
@@ -72,8 +71,7 @@ def login_page():
     render_template("driver_login.html") 
     if request.method == "POST":
         #Cheking login credentials
-        # if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
-        if request.form["name"] in username_lst:
+        if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
             user = request.form["name"]
             token= "".join([str(random.randint(1,30)) for i in range(0,5)])
             confirmed_session[user] = token
@@ -108,13 +106,14 @@ def order_details():
     token = users_session[1]
     item = request.args.get('item')
     raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
+    item_check_dict = update_user_inventory(line_items,user,check=True)
     if request.method == "POST":
         df = clean_orders_df(raw_df,item)
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
         conn.commit()
         df = pandas.read_sql(f"select * from {user}_orders",con=conn)
         return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
-    return render_template("orders_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price)
+    return render_template("orders_details.html",id=item , lst=line_items, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
 
 @app.route("/driver_inventory", methods=["GET","POST"])
 def driver_inventory():
