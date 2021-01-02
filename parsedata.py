@@ -331,4 +331,15 @@ def fufill_order(shopify_order_id):
     
     return "fulfilled and paid"
 
-
+#update user sqlite table after order is completed
+def update_user_inventory(line_items,user):
+    sku_quantity_dict = {}
+    for i in line_items:
+        sku_quantity_dict[ i["node"]["sku"] ] = i["node"]["quantity"]
+    df = pandas.read_sql(f"select * from {user}",con=conn)
+    for i in sku_quantity_dict:
+        print(i)
+        if i in df.sku.tolist():
+            quantity = sku_quantity_dict[i]
+            df.loc[df.sku == i, "inventory_quantity"] -= quantity
+    df.to_sql(f"{user}", con=conn, index=False, if_exists="replace")

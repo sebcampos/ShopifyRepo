@@ -37,7 +37,7 @@ def user_orders():
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
     df.completed = df.completed.apply(lambda x: str(x).split(".")[0])
-    html_df = df[["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
+    html_df = df.loc[df.fulfillment_status == "UNFULFILLED"][["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
     return render_template("user_orders.html", user=user, df=html_df)
 
 @app.route("/user_orders/details", methods=['GET','POST'])
@@ -56,6 +56,7 @@ def user_orders_details():
         if list(request.form.keys())[0] == 'sku':
             conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
             conn.commit()
+            update_user_inventory(line_items,user)
             fufill_order(graphQL_id)
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
         if list(request.form.keys())[0] == 'name':
