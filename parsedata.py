@@ -6,9 +6,9 @@ from flask_nav import Nav
 from flask_nav.elements import Navbar, Subgroup, View
 import random
 import sqlite3
-from config import access_token
-from config import hash_function
-from config import API_SECRET_KEY
+from Shopify_config import access_token
+from Shopify_config import hash_function
+from Shopify_config import API_SECRET_KEY
 import hmac
 import hashlib
 import base64
