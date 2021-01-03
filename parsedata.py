@@ -365,10 +365,10 @@ def update_user_inventory(line_items,user,check=False):
         for i in sku_quantity_dict:
             if i in df.sku.tolist():
                 quantity = sku_quantity_dict[i]
-                if df.loc[df.sku == i][["inventory_quantity"]].item() >= quantity:
-                    new_dict[i] = True
+                if df.loc[df.sku == i, "inventory_quantity"].item() >= quantity:
+                    new_dict[df.loc[df.sku == i, "display_name"].item()] = True
                 else:
-                    new_dict[i] = False
+                    new_dict[df.loc[df.sku == i, "display_name"].item()] = False
         return new_dict
                 
 
