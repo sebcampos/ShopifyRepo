@@ -55,7 +55,7 @@ def user_orders_details():
         if list(request.form.keys())[0] == 'sku':
             conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
             conn.commit()
-            update_user_inventory(line_items,user)
+            update_user_inventory_sale(line_items,user)
             fufill_order(graphQL_id)
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
         if list(request.form.keys())[0] == 'name':

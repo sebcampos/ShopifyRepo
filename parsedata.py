@@ -354,7 +354,7 @@ def fufill_order(shopify_order_id):
     return "fulfilled and paid"
 
 #update user sqlite table after order is completed
-def update_user_inventory(line_items,user,check=False):
+def update_user_inventory_sale(line_items,user,check=False):
     sku_quantity_dict = {}
     for i in line_items:
         sku_quantity_dict[ i["node"]["sku"] ] = i["node"]["quantity"]
@@ -381,3 +381,17 @@ def update_user_inventory(line_items,user,check=False):
     return df.to_sql(f"{user}", con=conn, index=False, if_exists="replace")
 
 
+def driver_week_summary(username,dates):
+    #last date must be a monday
+    df = pandas.read_sql(f"select * from {username}_orders",con=conn)
+    df = df.loc[(pandas.to_datetime(df.completed) > pandas.to_datetime(dates[0])) & (pandas.to_datetime(df.completed) < pandas.to_datetime(dates[1])) & (df.fulfillment_status == "FULFILLED")]
+
+    driver_estimate_pay = df.order_price.count() * 15
+    total_money_brought_in = df.order_price.sum()
+    total_orders_delivered = df.completed.count()
+    print(f"Estimate Pay:\t\t\t{driver_estimate_pay}\nTotal Collected:\t\t{total_money_brought_in}\nOrders Delivered:\t\t{total_orders_delivered}\n")
+    print(f"Orders for {dates[0]} to {dates[1]}:")
+    for i in range(len(df.completed.tolist())):
+        print("\t","CUSTOMER",df.customer_names.tolist()[i],"\n\t ORDER PRICE",df.order_price.tolist()[i],"\n\t","TIMESTAMP",df.completed.tolist()[i],"\n")
+
+    return df
