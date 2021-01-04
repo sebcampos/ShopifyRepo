@@ -106,7 +106,7 @@ def order_details():
     token = users_session[1]
     item = request.args.get('item')
     raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
-    item_check_dict = update_user_inventory(line_items,user,check=True)
+    item_check_dict = update_user_inventory_sale(line_items,user,check=True)
     if request.method == "POST":
         df = clean_orders_df(raw_df,item)
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
