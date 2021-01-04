@@ -398,3 +398,11 @@ def driver_week_summary(username,dates):
         print("\t","CUSTOMER",df.customer_names.tolist()[i],"\n\t ORDER PRICE",df.order_price.tolist()[i],"\n\t","TIMESTAMP",df.completed.tolist()[i],"\n")
 
     return df
+
+def check_for_new_items(user):
+    user_inventory = pandas.read_sql(f"select * from {user}", con=conn)
+    lst_tups = list(zip(inventory_df.display_name.tolist(),inventory_df.sku.tolist()))
+    lst_tups2 = list(zip(user_inventory.display_name.tolist(),user_inventory.sku.tolist()))
+    for i in lst_tups:
+        if i not in lst_tups:
+            print(i)
