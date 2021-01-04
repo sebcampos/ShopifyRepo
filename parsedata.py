@@ -157,9 +157,10 @@ def verify_session(confirmed_session):
 
 
 #Collect items data
-def items_data_call(update = False): #<-- rename this 
+def items_data_call(update = False): 
     
     if update == True:
+        os.system("rm products_export_1.csv")
         browser = Browser('firefox', executable_path="/usr/local/bin/geckodriver", headless=False)
         url = 'https://accounts.shopify.com/store-login'
         shop_domain = 'seni-society-delivery.myshopify.com'
@@ -169,20 +170,22 @@ def items_data_call(update = False): #<-- rename this
         browser.find_by_id("shop_domain").fill(shop_domain)
         browser.find_by_name("commit").click()
         browser.find_by_id("account_email").fill(account_email)
+        time.sleep(6)
         browser.find_by_name("commit").click()
         browser.find_by_id("account_password").fill(account_password)
         browser.find_by_name("commit").click()
+        time.sleep(6)
         browser.find_by_text('Products').click()
         browser.find_by_text('Export').click()
-        time.sleep(30)
+        time.sleep(60)
         browser.quit()
-        #raw_df.to_sql("items_data",con=conn, index=False)
-        return f"products csv sent to {account_email}"
-
+        browser.close()
+        os.system("mv ~/Downloads/products_export_1.csv .")
+        raw_df = pandas.read_csv("products_export_1.csv")
+        raw_df.to_sql("items_data",con=conn, index=False, if_exists='replace')
     
-    
-    #replace with a webscrape to collect this csv
-    raw_df = pandas.read_csv("products_export_1.csv")
+    else:
+        raw_df = pandas.read_csv("products_export_1.csv")
     
     raw_df.dropna(how="all",inplace=True)
 
