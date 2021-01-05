@@ -371,10 +371,9 @@ def update_user_inventory_sale(line_items,user,check=False):
                 if df.loc[df.sku == i, "inventory_quantity"].item() >= quantity:
                     new_dict[df.loc[df.sku == i, "display_name"].item()] = True
                 else:
-                    new_dict[df.loc[df.sku == i, "display_name"].item()] = False
+                    new_dict[df.loc[df.sku == i, "display_name"].item()] = "False"
             elif i not in df.sku.tolist():
                 new_dict["VARIANT"] = "sku has no Title"
-        print(new_dict)
         return new_dict
                 
 
@@ -414,5 +413,4 @@ def check_for_new_items(user):
 def collect_option_value(sku):
     df = pandas.read_sql("select * from items_data",con=conn)
     option_sku_value = df.loc[df["Variant SKU"] == sku,'Option1 Value'].item()
-    print(option_sku_value)
     return option_sku_value

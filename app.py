@@ -50,7 +50,7 @@ def user_orders_details():
     try:
         raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True) 
         option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
-        line_items_dict = {i:v for i,v in list(zip(option_sku_lst,line_items))}
+        line_items_2 = list(zip(option_sku_lst,line_items))
     except:
         line_items,customer_info_dict,order_price = [], {}, "  Order has been fulfilled or canceled"
     if request.method == "POST":
@@ -64,7 +64,7 @@ def user_orders_details():
             send_canned_text("30",customer_info_dict["name"], user, order_price )
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
         
-    return render_template("user_order_details.html",id=item , lst=line_items_dict, dict1=customer_info_dict, order_price=order_price)    
+    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price)    
     
 @app.route("/", methods=['GET','POST'])
 def login_page():
@@ -110,14 +110,19 @@ def order_details():
     raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
     item_check_dict = update_user_inventory_sale(line_items,user,check=True)
     option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
-    line_items_dict = {i:v for i,v in list(zip(option_sku_lst,line_items))}
+
+    
+
+    line_items_2 = list(zip(option_sku_lst,line_items))
+
+
     if request.method == "POST":
         df = clean_orders_df(raw_df,item)
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
         conn.commit()
         df = pandas.read_sql(f"select * from {user}_orders",con=conn)
         return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
-    return render_template("orders_details.html",id=item , lst=line_items_dict, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
+    return render_template("orders_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
 
 @app.route("/driver_inventory", methods=["GET","POST"])
 def driver_inventory():
