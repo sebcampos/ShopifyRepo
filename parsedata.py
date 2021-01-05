@@ -401,6 +401,7 @@ def driver_week_summary(username,dates):
 
 def check_for_new_items(user):
     user_inventory = pandas.read_sql(f"select * from {user}", con=conn)
+    inverntory_df = pandas.read_sql(f"select * from items_data", con=conn)
     lst_tups = list(zip(inventory_df.display_name.tolist(),inventory_df.sku.tolist()))
     lst_tups2 = list(zip(user_inventory.display_name.tolist(),user_inventory.sku.tolist()))
     for i in lst_tups:
