@@ -28,7 +28,7 @@
                         </tbody>
                     </table>
                     {% endfor %}
-                    {% for i in item_check_dict%}
+                    {% for i in item_check_dict %}
                     <br></br>
                     <h2>Fulfillable</h2>
                     <br></br> 
@@ -45,11 +45,11 @@
                 <div class="col-xs-6">
                     {% for i in lst %}
                     <hr></hr>
-                    <h2>{{ i["node"]['product']["title"]}}</h2>
+                    <h2>{{ lst[i]["node"]['product']["title"]}}</h2>
                     <hr></hr>
-                    <h4> SKU: {{ i["node"]['sku'] }}</h4>
-                    <h3>{{ i["node"]['product']['productType'] }} Quantity: {{ i["node"]['quantity'] }}</h3>
-                    <p>{{ i["node"]["product"]["description"] }}</p>
+                    <h4> SKU: {{ lst[i]["node"]['sku'] }}</h4>
+                    <h3>{{ i }}</h3>
+                    <p>{{ lst[i]["node"]["product"]["description"] }}</p>
                     {% endfor %}
                 </div>
 
