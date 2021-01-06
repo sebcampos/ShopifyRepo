@@ -32,7 +32,7 @@ def user_orders():
     token = users_session[1]
     if request.method == "POST":
         item = request.form["item"]
-        return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200))
+        return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
     df.completed = df.completed.apply(lambda x: str(x).split(".")[0])
@@ -59,10 +59,10 @@ def user_orders_details():
             conn.commit()
             update_user_inventory_sale(line_items,user)
             fufill_order(graphQL_id)
-            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'name':
             send_canned_text("30",customer_info_dict["name"], user, order_price )
-            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         
     return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price)    
     
@@ -78,7 +78,7 @@ def login_page():
             token= "".join([str(random.randint(1,30)) for i in range(0,5)])
             confirmed_session[user] = token
             print(confirmed_session)
-            return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
+            return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
             return admin_page(request.form["name"])
         return "<h1>Invalid credentials reload page<h1>"
@@ -96,7 +96,7 @@ def order_page():
     #df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
     if request.method == "POST":
         item = request.form["item"]
-        return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200))
+        return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200,_scheme="https",_external=True))
     return render_template('todays_orders.html',df=df)
 
 @app.route("/todays_orders/order_details",methods=["GET","POST"])
@@ -135,7 +135,7 @@ def driver_inventory():
     df.drop("index",axis=1,inplace=True)
     if request.method == "POST":
         item = request.form["item"]
-        return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200))
+        return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200,_scheme="https",_external=True))
 
     return render_template("driver_inventory.html",df=df,user=user)
 
@@ -160,7 +160,7 @@ def item_details():
         new_val = request.form["updateme"]
         conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE sku='{sku}'")
         conn.commit()
-        return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200))
+        return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
     return render_template("update_items.html",df=df)
 
 
