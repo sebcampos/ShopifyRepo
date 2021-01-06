@@ -412,5 +412,10 @@ def check_for_new_items(user):
 
 def collect_option_value(sku):
     df = pandas.read_sql("select * from items_data",con=conn)
-    option_sku_value = df.loc[df["Variant SKU"] == sku,'Option1 Value'].item()
+    try:
+        option_sku_value = df.loc[df["Variant SKU"] == sku,'Option1 Value'].item()
+    except:
+        option_sku_value = "null"
+
+
     return option_sku_value
