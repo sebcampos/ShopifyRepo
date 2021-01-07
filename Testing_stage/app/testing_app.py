@@ -48,7 +48,7 @@ def user_orders_details():
     token = users_session[1]
     item = request.args.get('item')
     try:
-        raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True) 
+        raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True)
         option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
         item_check_dict = update_user_inventory_sale(line_items,user,check=True)
         line_items_2 = list(zip(option_sku_lst,line_items))
@@ -66,14 +66,15 @@ def user_orders_details():
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'route':
             return render_template("routing_page.html")
-        
-    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)    
-    
+
+
+    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)
+
 @app.route("/", methods=['GET','POST'])
 def login_page():
     df = pandas.read_sql("select * from users", con=conn)
     username_lst = get_usernames()
-    render_template("driver_login.html") 
+    render_template("driver_login.html")
     if request.method == "POST":
         #Cheking login credentials
         if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
@@ -85,8 +86,8 @@ def login_page():
         elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
             return admin_page(request.form["name"])
         return "<h1>Invalid credentials reload page<h1>"
-    return render_template("driver_login.html") 
-    
+    return render_template("driver_login.html")
+
 @app.route("/todays_orders",methods=["GET","POST"])
 def order_page():
     users_session = verify_session(confirmed_session)
@@ -130,7 +131,7 @@ def driver_inventory():
     user = users_session[0]
     token = users_session[1]
     df = pandas.read_sql(f"select * from {user}", con=conn)
-    df.drop("index",axis=1,inplace=True)
+    #cdf.drop("index",axis=1,inplace=True)
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200,_scheme="https",_external=True))
@@ -172,4 +173,3 @@ def install():
 
 if __name__ == "__main__":
    app.run()
-
