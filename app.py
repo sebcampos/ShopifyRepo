@@ -66,15 +66,10 @@ def user_orders_details():
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'route':
             return render_template("routing_page.html")
-<<<<<<< HEAD
+
 
     return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)
 
-=======
-        
-    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)    
-    
->>>>>>> 82e3a5bc55f245046f9f25253699fdf2788cab73
 @app.route("/", methods=['GET','POST'])
 def login_page():
     df = pandas.read_sql("select * from users", con=conn)
