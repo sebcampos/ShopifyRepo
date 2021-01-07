@@ -121,7 +121,7 @@ def order_details():
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
         conn.commit()
         df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200))
+        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
     return render_template("orders_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
 
 @app.route("/driver_inventory", methods=["GET","POST"])
