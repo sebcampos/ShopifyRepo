@@ -64,6 +64,8 @@ def user_orders_details():
         if list(request.form.keys())[0] == 'name':
             send_canned_text("30",customer_info_dict["name"], user, order_price )
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
+        if list(request.form.keys())[0] == 'route':
+            return render_template("routing_page.html")
         
     return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)    
     
@@ -128,7 +130,7 @@ def driver_inventory():
     user = users_session[0]
     token = users_session[1]
     df = pandas.read_sql(f"select * from {user}", con=conn)
-    df.drop("index",axis=1,inplace=True)
+    #cdf.drop("index",axis=1,inplace=True)
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200,_scheme="https",_external=True))

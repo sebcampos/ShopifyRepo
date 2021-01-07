@@ -29,6 +29,9 @@
                         </tbody>
                     </table>
                     {% endfor %}
+                    <button id="route" name="route" type="submit" class="btn btn-primary">Route</button>
+                      
+                    <p>{{  dict1['address1']   }} {{  dict1['address2']   }} {{  dict1['city']   }} {{  dict1['zip']   }} {{  dict1['provinceCode']   }} {{  dict1['country']   }}</p>
                     <br></br>
                     <h2>Fulfillable</h2>
                     {% for i in item_check_dict %}
