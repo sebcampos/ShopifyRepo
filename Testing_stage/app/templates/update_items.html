@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+    rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+    <link rel='stylesheet' href='../static/css/update_items.css'/>
+    <title>Items Page</title>
+</head>
+<body>
+    <div class="container">
+        <div class="container-fluid">
+        {% block navbar %} 
+        {{nav.nav_bar.render()}} 
+        {% endblock %}
+        <h1>Inventory Item</h1>
+        <br><br>
+        <form action='#' method="POST">
+            <div style="float:left;">
+                <input onclick="add()" class="center btn btn-primary" type="button" value="+"></button> 
+            </div>
+            <div style="float:left;">
+                <input class="form-control" name="updateme" id="newvalid" type="text"  style="text-align:right;" name="newval" value="{{df['inventory_quantity'].item()}}"></input>
+            </div>
+            <div style="float:left;">
+                <input onclick="subtract()" class="center btn btn-primary" type="button" value="-"></button>
+            </div>
+            <br><br>
+            <button id="confirm" name="submit" class="center btn btn-primary" type="submit" >update</button>
+            </form>
+        <br><br>
+        <table id="myTable" class="table">
+            <tbody>
+            <tr class="table__header">
+                <th class="table__cell">Display Name</th>
+                <th class="table__cell">SKU</th>
+                <th class="table__cell">Driver Inventory</th>
+            </tr>
+            <tr class="table__row">
+                <td class="table__cell">{{df['display_name'].item()}}</td>
+                <td class="table__cell">{{df['sku'].item()}}</td>
+                <td id="DriverInventory" class="table__cell">{{df['inventory_quantity'].item()}}</td>
+            </tr>
+        </div>
+    </div>
+    <script src="../static/js/update_inventory.js"></script>
+</body>
+</html>
