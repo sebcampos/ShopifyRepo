@@ -50,9 +50,10 @@ def user_orders_details():
     try:
         raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True) 
         option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
+        item_check_dict = update_user_inventory_sale(line_items,user,check=True)
         line_items_2 = list(zip(option_sku_lst,line_items))
     except:
-        line_items,customer_info_dict,order_price = [], {}, "  Order has been fulfilled or canceled"
+        line_items_2,customer_info_dict,order_price,item_check_dict = [], {}, "  Order has been fulfilled or canceled", {}
     if request.method == "POST":
         if list(request.form.keys())[0] == 'sku':
             conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
@@ -64,7 +65,7 @@ def user_orders_details():
             send_canned_text("30",customer_info_dict["name"], user, order_price )
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         
-    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price)    
+    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)    
     
 @app.route("/", methods=['GET','POST'])
 def login_page():
@@ -110,12 +111,7 @@ def order_details():
     raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
     item_check_dict = update_user_inventory_sale(line_items,user,check=True)
     option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
-
-    
-
     line_items_2 = list(zip(option_sku_lst,line_items))
-
-
     if request.method == "POST":
         df = clean_orders_df(raw_df,item)
         df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
@@ -132,7 +128,7 @@ def driver_inventory():
     user = users_session[0]
     token = users_session[1]
     df = pandas.read_sql(f"select * from {user}", con=conn)
-    df.drop("index",axis=1,inplace=True)
+    #df.drop("index",axis=1,inplace=True)
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200,_scheme="https",_external=True))

@@ -179,7 +179,6 @@ def items_data_call(update = False):
         browser.find_by_text('Export').click()
         time.sleep(60)
         browser.quit()
-        browser.close()
         os.system("mv ~/Downloads/products_export_1.csv .")
         raw_df = pandas.read_csv("products_export_1.csv")
         raw_df.to_sql("items_data",con=conn, index=False, if_exists='replace')
@@ -187,7 +186,7 @@ def items_data_call(update = False):
     else:
         raw_df = pandas.read_csv("products_export_1.csv")
     
-    raw_df.dropna(how="all",inplace=True)
+    
 
     raw_df.columns = [i.replace(" ","-") for i in raw_df.columns] 
 
@@ -202,7 +201,7 @@ def items_data_call(update = False):
                 column.append(None)
         lst.append(column)
     
-    inventory_df = raw_df[["Title","Variant-SKU","Variant-Inventory-Qty"]].dropna()
+    inventory_df = raw_df[["Title","Variant-SKU","Variant-Inventory-Qty"]]
     inventory_df.columns = ['display_name','sku','inventory_quantity']
 
     return inventory_df
@@ -402,13 +401,11 @@ def driver_week_summary(username,dates):
     return df
 
 def check_for_new_items(user):
+    inventory_df = items_data_call()
     user_inventory = pandas.read_sql(f"select * from {user}", con=conn)
-    inventory_df = pandas.read_sql(f"select * from items_data", con=conn)
     lst_tups = list(zip(inventory_df.display_name.tolist(),inventory_df.sku.tolist()))
     lst_tups2 = list(zip(user_inventory.display_name.tolist(),user_inventory.sku.tolist()))
-    for i in lst_tups:
-        if i not in lst_tups:
-            print(i)
+    return [i for i in lst_tups if i not in lst_tups2 and type(i[0]) == float and type(i[1]) == str]
 
 def collect_option_value(sku):
     df = pandas.read_sql("select * from items_data",con=conn)
