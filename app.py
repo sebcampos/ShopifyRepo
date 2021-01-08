@@ -131,7 +131,7 @@ def driver_inventory():
     user = users_session[0]
     token = users_session[1]
     df = pandas.read_sql(f"select * from {user}", con=conn)
-    #df.drop("index",axis=1,inplace=True)
+    #cdf.drop("index",axis=1,inplace=True)
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200,_scheme="https",_external=True))
