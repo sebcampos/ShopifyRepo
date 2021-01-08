@@ -2,6 +2,7 @@
 // prompted by your browser. If you see the error "The Geolocation service
 // failed.", it means you probably did not give permission for the browser to
 // locate you.
+
 let map; 
 let infoWindow;
 
@@ -10,9 +11,16 @@ function initMap() {
     center: { lat: -34.397, lng: 150.644 },
     zoom: 6,
   });
+  let lat = document.getElementById("lat").textContent;
+  let lng = document.getElementById("lng").textContent;
+  console.log(lat);
+  console.log(lng);
+  var directionsService = new google.maps.DirectionsService();
+  var directionsRenderer = new google.maps.DirectionsRenderer();
+  directionsRenderer.setMap(map);
   infoWindow = new google.maps.InfoWindow();
   const locationButton = document.createElement("button");
-  locationButton.textContent = "Pan to Current Location";
+  locationButton.textContent = "Route";
   locationButton.classList.add("custom-map-control-button");
   map.controls[google.maps.ControlPosition.TOP_CENTER].push(locationButton);
   locationButton.addEventListener("click", () => {
@@ -24,15 +32,33 @@ function initMap() {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
+          const pos2 = {
+            lat: Number(lat),
+            lng: Number(lng)
+          }
           infoWindow.setPosition(pos);
-          infoWindow.setContent("Location found.");
+          infoWindow.setContent("Current location.");
           infoWindow.open(map);
           map.setCenter(pos);
+          console.log(lat);
+          var request = {
+            origin: new google.maps.LatLng(pos),
+            destination: new google.maps.LatLng(pos2),
+            travelMode: 'DRIVING'
+          }
+          directionsService.route(request, function(response,status) {
+            if (status == 'OK' ) {
+              console.log(response);
+              directionsRenderer.setDirections(response);
+            }
+          });
         },
+
         () => {
           handleLocationError(true, infoWindow, map.getCenter());
         }
       );
+
     } else {
       // Browser doesn't support Geolocation
       handleLocationError(false, infoWindow, map.getCenter());
@@ -49,5 +75,3 @@ function handleLocationError(browserHasGeolocation, infoWindow, pos) {
   );
   infoWindow.open(map);
 }
-
-console.log(typeof initMap)
