@@ -65,7 +65,8 @@ def user_orders_details():
             send_canned_text("30",customer_info_dict["name"], user, order_price )
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'route':
-            return render_template("routing_page.html")
+            lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
+            return render_template("routing_page.html",lat=lat,lng=lng)
 
 
     return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)
