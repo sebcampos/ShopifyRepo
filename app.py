@@ -152,10 +152,10 @@ def item_details():
         return '<h1>refresh session</h1>'
     user = users_session[0]
     token = users_session[1]
-    item = request.args.get('item')
     item = request.args.get('item').split("__")[0]
     sku = request.args.get('item').split("__")[1]
     df = pandas.read_sql(f"select * from {user} where sku='{sku}'", con=conn)
+    print(df)
     if request.method == "POST":
         new_val = request.form["updateme"]
         conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE sku='{sku}'")
