@@ -8,13 +8,11 @@
       defer
     ></script>
     <link rel="stylesheet" type="text/css" href="../static/css/new_css.css" />
+    <script> var waypts = JSON.parse('{{ lst | tojson | safe }}'); var v_lat = '{{lat}}'; var v_lng = '{{ lng }}';</script>
     <script src="../static/js/routing.js"></script>
 
   </head>
   <body>
-    <div id="lat" >{{lst[-1][0]}}</div>
-    <div id="lng" >{{lst[-1][1]}}</div>
-    <div id="waypoints" >{{waypoints}}</div>
     <div id="map"></div>
   </body>
 

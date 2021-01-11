@@ -421,7 +421,13 @@ def order_coords(df):
     customer_data = [ (json.loads(i.replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
 
     customer_data.sort()
+    
+    lat_and_lng = [{'lat':i,'lng':v} for i,v in customer_data]
 
-    waypoints = str(customer_data[0:-1]).replace("[","").replace("]","").replace("(","").replace(")","")
+    lat = lat_and_lng[-1]['lat']
 
-    return customer_data, waypoints
+    lng = lat_and_lng[-1]['lng']
+
+
+    
+    return lat,lng,lat_and_lng
