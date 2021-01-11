@@ -416,3 +416,8 @@ def collect_option_value(sku):
 
 
     return option_sku_value
+
+def order_coords(df):
+    customer_data = [ (json.loads(i.replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
+    
+    return customer_data
