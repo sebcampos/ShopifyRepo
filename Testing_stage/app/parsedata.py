@@ -419,5 +419,9 @@ def collect_option_value(sku):
 
 def order_coords(df):
     customer_data = [ (json.loads(i.replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
-    
-    return customer_data
+
+    customer_data.sort()
+
+    waypoints = str(customer_data[0:-1]).replace("[","").replace("]","").replace("(","").replace(")","")
+
+    return customer_data, waypoints

@@ -1,5 +1,5 @@
 
-#TODO add order_coords to app.py and to parsedata.py, added button to user orders html and edited the user orders page function
+#TODO add order_coords to app.py and to parsedata.py, added button to user orders html and edited the user orders page function, changed routing.js functions, changed routing.html
 
 from parsedata import *
 
@@ -39,8 +39,9 @@ def user_orders():
             return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'route':
             df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-            coords_lst = order_coords(df)
-            return coords_lst
+            coords_lst, waypoints = order_coords(df)
+            print(coords_lst)
+            return render_template("routing_page.html",lst=coords_lst,waypoints=waypoints)
 
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])

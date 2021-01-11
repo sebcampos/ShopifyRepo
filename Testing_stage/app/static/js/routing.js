@@ -13,8 +13,7 @@ function initMap() {
   });
   let lat = document.getElementById("lat").textContent;
   let lng = document.getElementById("lng").textContent;
-  console.log(lat);
-  console.log(lng);
+  let foo = document.getElementById("waypoints").textContent
   var directionsService = new google.maps.DirectionsService();
   var directionsRenderer = new google.maps.DirectionsRenderer();
   directionsRenderer.setMap(map);
@@ -40,10 +39,28 @@ function initMap() {
           infoWindow.setContent("Current location.");
           infoWindow.open(map);
           map.setCenter(pos);
-          console.log(lat);
+          let waypts = [];
+          let newArray = foo.split(",")
+          console.log(newArray);
+          for (let i = 0; i < newArray.length / 2; i++ ) {
+              console.log(newArray[i],newArray[i+1]);
+              let new_lat = Number(newArray[i]);
+              let new_lng = Number(newArray[i+1]);
+              let i = i + 2
+              const pos_way = new google.maps.LatLng({
+                lat: new_lat,
+                lng: new_lng});
+              waypts.push({
+                location: pos_way,
+                stopover: true
+              });
+            };
+          console.log(waypts);
           var request = {
             origin: new google.maps.LatLng(pos),
             destination: new google.maps.LatLng(pos2),
+            waypoints: waypts,
+            optimizeWaypoints: true,
             travelMode: 'DRIVING'
           }
           directionsService.route(request, function(response,status) {
