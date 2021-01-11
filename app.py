@@ -31,8 +31,13 @@ def user_orders():
     user = users_session[0]
     token = users_session[1]
     if request.method == "POST":
-        item = request.form["item"]
-        return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
+        if list(request.form.keys())[0] == 'item':
+            item = request.form["item"]
+            return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
+        if list(request.form.keys())[0] == 'route':
+            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+            lat,lng,coords_lst = order_coords(df)
+            return render_template("routing_page.html",lat=lat,lng=lng,lst=coords_lst)
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
     df.completed = df.completed.apply(lambda x: str(x).split(".")[0])

@@ -2,19 +2,15 @@
 // prompted by your browser. If you see the error "The Geolocation service
 // failed.", it means you probably did not give permission for the browser to
 // locate you.
-
+console.log("working");
 let map; 
 let infoWindow;
 
 function initMap() {
   map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: -34.397, lng: 150.644 },
+    center: { lat: 37.4356173, lng: -122.4281 },
     zoom: 6,
   });
-  let lat = document.getElementById("lat").textContent;
-  let lng = document.getElementById("lng").textContent;
-  console.log(lat);
-  console.log(lng);
   var directionsService = new google.maps.DirectionsService();
   var directionsRenderer = new google.maps.DirectionsRenderer();
   directionsRenderer.setMap(map);
@@ -33,17 +29,28 @@ function initMap() {
             lng: position.coords.longitude,
           };
           const pos2 = {
-            lat: Number(lat),
-            lng: Number(lng)
+            lat: Number(v_lat),
+            lng: Number(v_lng)
+          }
+          let new_waypts = [];
+          for (let i = 0; i < waypts.length; i++) {
+            let first = waypts[i].lat;
+            let second = waypts[i].lng;
+            let pos = new google.maps.LatLng(first,second)
+            new_waypts.push({
+                location: pos,
+                stopover: true
+            })
           }
           infoWindow.setPosition(pos);
           infoWindow.setContent("Current location.");
           infoWindow.open(map);
           map.setCenter(pos);
-          console.log(lat);
           var request = {
             origin: new google.maps.LatLng(pos),
             destination: new google.maps.LatLng(pos2),
+            waypoints: new_waypts,
+            optimizeWaypoints: true,
             travelMode: 'DRIVING'
           }
           directionsService.route(request, function(response,status) {

@@ -8,12 +8,12 @@
       defer
     ></script>
     <link rel="stylesheet" type="text/css" href="../static/css/new_css.css" />
+    <script> var waypts = JSON.parse('{{ lst | tojson | safe }}'); var v_lat = '{{lat}}'; var v_lng = '{{ lng }}';</script>
     <script src="../static/js/routing.js"></script>
 
   </head>
   <body>
     <div id="map"></div>
   </body>
-  <div id="lat" >{{lat}}</div>
-  <div id="lng" >{{lng}}</div>
+
 </html>
