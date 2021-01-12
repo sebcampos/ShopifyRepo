@@ -14,20 +14,9 @@
     <div class="container">
         <div class="container-fluid">
             <h1>{{ id }}</h1>
+            <h2>{{ dict1["name"] }}</h2>
             <h2><i> ${{ order_price }} </i></h2>
             <form action='#' method="POST"><button name="sku" value="{{ id }}" type="submit" class="btn btn-primary">Add order</button></form>
-            <div class="row">
-                <div class="col-xs-6">
-                    {% for i in dict1 %}
-                    <table class ="table">
-                        <tbody>
-                            <tr class="table__row">
-                                <td class="table__cell">{{ i }}</td>
-                                <td class="table__cell">{{ dict1[i] }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    {% endfor %}
                     <br></br>
                     <h2>Fulfillable</h2>
                     {% for i in item_check_dict %}
@@ -42,7 +31,6 @@
                     </table>
                     {% endfor %} 
                 </div>
-                <div class="col-xs-6">
                     {% for i in lst %}
                     <hr></hr>
                     <h2>{{ i[1]["node"]['product']["title"]}}</h2>

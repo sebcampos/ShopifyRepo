@@ -17,7 +17,10 @@
             {{nav.nav_bar.render()}}
             {% endblock %}
             <form action='#' method="POST">
-            <h1>{{ user }} Orders</h1> <button name="route" class="center btn btn-primary" type="submit">Route</button>
+            <h1>{{ user }} Orders</h1>
+            <br></br>
+            <button name="route" class="center btn btn-primary" type="submit">Map All Orders</button>
+            <br></br>
             <table id="myTable" class="table">
                 <tbody>
                 <tr class="table__header">
@@ -31,7 +34,7 @@
                 </tr>
                 {% for row in df.iterrows() %}
                 <tr class="table__row">
-                    <td><button name="item" class="center btn btn-primary" type="submit" value="{{ row[1][0] }}">select</button></form></td>
+                    <td><button name="item" class="btn btn-primary btn-sm"type="submit" value="{{ row[1][0] }}">select</button></form></td>
                     <td class="table__cell">{{ row[1][0] }}</td>
                     <td class="table__cell">{{ row[1][1] }}</td>
                     <td class="table__cell">{{ row[1][2] }}</td>

@@ -19,6 +19,8 @@ import os
 from twilio.rest import Client
 import twilio_config
 from splinter import Browser
+import requests
+import re
 
 
 #today date string:
@@ -223,7 +225,7 @@ def create_user(username,password):
 
     new_user_df.to_sql(f'{username}',con=conn,if_exists="fail")
 
-    new_user_orders_df = pandas.DataFrame(columns=["order_id","fulfillment_status","line_items","order_time_raw","order_date","customer_data","order_price","customer_names","accepted","completed"])
+    new_user_orders_df = pandas.DataFrame(columns=["order_id","fulfillment_status","line_items","order_time_raw","order_date","customer_data","order_price","customer_names","accepted","completed","paid_with_cash_app"])
     new_user_orders_df.to_sql(f'{username}_orders',con=conn,index=False,if_exists="fail")
 
     conn.commit()
@@ -260,10 +262,9 @@ def order_details_parser(item,v2=False):
 
     return raw_df,line_items,customer_info_dict,order_price
 
-#TODO  print/email/text data, account for "CLAIMED" orders , create routing function 
 
 def send_canned_text(eta,customer_name,user,delivery_total):
-    message_to_send = f'''ETA {eta} min\nHello {customer_name} !  This is {user} with The Sensi Society\nDelivery Total {delivery_total} cash or cash app\nPayments accepted via cash or Cash App: (+$5) Send to $SensiSociety\nDelivery drivers don’t carry change for safety purposes.\nPlease have ID READY upon delivery.\n🙏\nPS: HONESTLY the biggest help you can do is writing a review for us :)\nhttps://g.page/higher-ground-delivery/review?gm\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
+    message_to_send = f'''ETA {eta} \nHello {customer_name} !  This is {user} with The Sensi Society\nDelivery Total {delivery_total} cash or cash app\nPayments accepted via cash or Cash App: (+$5) Send to $SensiSociety\nDelivery drivers don’t carry change for safety purposes.\nPlease have ID READY upon delivery.\n🙏\nPS: HONESTLY the biggest help you can do is writing a review for us :)\nhttps://g.page/higher-ground-delivery/review?gm\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
     client.messages.create(from_=twilio_config.MY_FIRST_TWILIO_NUMBER, to="6503392346", body=message_to_send)
 
 
@@ -412,12 +413,13 @@ def collect_option_value(sku):
     try:
         option_sku_value = df.loc[df["Variant SKU"] == sku,'Option1 Value'].item()
     except:
-        option_sku_value = "null"
+        option_sku_value = "Tip"
 
 
     return option_sku_value
 
-def order_coords(df):
+def order_coords(user):
+    df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     customer_data = [ (json.loads(i.replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
 
     customer_data.sort()
@@ -427,15 +429,35 @@ def order_coords(df):
     lat = lat_and_lng[-1]['lat']
 
     lng = lat_and_lng[-1]['lng']
-
-
     
     return lat,lng,lat_and_lng
 
-def order_coords_2(df,order_id):
-    customer_data = df.loc[df.order_id == order_id,"customer_data"].item()
-    print(customer_data)
-    customer_data = json.loads(customer_data.replace(r"'" ,r'"' ))
-    print(type(customer_data))
-    lat,lng = customer_data["latitude"],customer_data["longitude"]
-    return lat,lng
+
+def get_eta(customer_info_dict):
+    lat, lng = customer_info_dict["latitude"],customer_info_dict["longitude"]
+    response = requests.get(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
+    eta = re.search(r"You should arrive around.*",response.text).group().split(".")[0].replace("You should arrive around","")
+    return eta
+
+def check_for_claimed(df):
+    users = pandas.read_sql("select * from users", con=conn)
+    order_lst = df.order_ids.tolist()
+    df_lst = []
+    for i in users.username.tolist():
+        if i != "admin":
+            df_user_orders = pandas.read_sql(f"select * from {i}_orders",con=conn)
+            df_lst.append(df_user_orders)
+    user_claimed_lst = []
+    for i in df_lst:
+        for i in i.order_id:
+            user_claimed_lst.append(i)
+    for i in order_lst:
+        if i in user_claimed_lst:
+            df.drop(df.loc[df.order_ids == i].index,inplace = True)
+    return df
+
+
+def cash_app_update(user,item):
+    user_orders_df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = True
+    user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)

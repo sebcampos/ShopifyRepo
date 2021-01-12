@@ -1,9 +1,4 @@
-
-#TODO added re and requests, edidted the user orders details routing button functionality
 from parsedata import *
-import requests
-import re
-import pprint
 
 app = Flask(__name__)
 
@@ -40,15 +35,12 @@ def user_orders():
             item = request.form["item"]
             return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'route':
-            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-            lat,lng,coords_lst = order_coords(df)
+            lat,lng,coords_lst = order_coords(user)
             return render_template("routing_page.html",lat=lat,lng=lng,lst=coords_lst)
-
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
     df.completed = df.completed.apply(lambda x: str(x).split(".")[0])
     html_df = df.loc[df.fulfillment_status == "UNFULFILLED"][["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
-    
     return render_template("user_orders.html", user=user, df=html_df)
 
 @app.route("/user_orders/details", methods=['GET','POST'])
@@ -59,7 +51,6 @@ def user_orders_details():
     user = users_session[0]
     token = users_session[1]
     item = request.args.get('item')
-    print(item)
     try:
         raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True)
         option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
@@ -68,6 +59,8 @@ def user_orders_details():
     except:
         line_items_2,customer_info_dict,order_price,item_check_dict = [], {}, "  Order has been fulfilled or canceled", {}
     if request.method == "POST":
+        if list(request.form.keys())[0] == 'cashapp':
+            cash_app_update(user,item)
         if list(request.form.keys())[0] == 'sku':
             conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
             conn.commit()
@@ -75,15 +68,10 @@ def user_orders_details():
             fufill_order(graphQL_id)
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'name':
-            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-            lat, lng =  order_coords_2(df,item)
-            #lat, lng = customer_info_dict["latitude"],customer_info_dict["longitude"]
-            response = requests.get(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
-            eta = re.search(r"You should arrive around.*",response.text).group().split(".")[0].replace("You should arrive around","")
-            send_canned_text(eta,"customer_name", user, order_price )
+            eta = get_eta(customer_info_dict)
+            send_canned_text(eta,customer_info_dict["name"], user, order_price )
         if list(request.form.keys())[0] == 'route':
-            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-            lat, lng =  order_coords_2(df,item)
+            lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
             return redirect(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
 
 
@@ -103,7 +91,10 @@ def login_page():
             print(confirmed_session)
             return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
-            return admin_page(request.form["name"])
+            user = request.form["name"]
+            token= "".join([str(random.randint(1,30)) for i in range(0,5)])
+            confirmed_session[user] = token
+            return redirect(url_for("admin_page",user=user,token=token, code=302,response=200,_scheme="https",_external=True))
         return "<h1>Invalid credentials reload page<h1>"
     return render_template("driver_login.html")
 
@@ -116,6 +107,7 @@ def order_page():
     token = users_session[1]
     raw_df = orders_api_call_1()
     df = raw_df.loc[(raw_df["order_date"] == today_str) | (raw_df["order_date"] == yesterday_str) | (raw_df["order_date"] == tomorrow_str)][["order_ids","fulfillment_status","order_time_raw","name"]]
+    df = check_for_claimed(df)
     #df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
     if request.method == "POST":
         item = request.form["item"]
@@ -159,8 +151,9 @@ def driver_inventory():
 
 
 @app.route("/admin_page")
-def admin_page(user):
-    return f" Admin Page: {user}"
+def admin_page():
+    df = pandas.read_sql("select * from sebastian_orders",con=conn)
+    return df.to_html()
 
 
 @app.route("/description", methods=["GET","POST"])
@@ -170,10 +163,10 @@ def item_details():
         return '<h1>refresh session</h1>'
     user = users_session[0]
     token = users_session[1]
-    item = request.args.get('item')
     item = request.args.get('item').split("__")[0]
     sku = request.args.get('item').split("__")[1]
     df = pandas.read_sql(f"select * from {user} where sku='{sku}'", con=conn)
+    print(df)
     if request.method == "POST":
         new_val = request.form["updateme"]
         conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE sku='{sku}'")
