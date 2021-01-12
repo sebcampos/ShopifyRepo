@@ -225,7 +225,7 @@ def create_user(username,password):
 
     new_user_df.to_sql(f'{username}',con=conn,if_exists="fail")
 
-    new_user_orders_df = pandas.DataFrame(columns=["order_id","fulfillment_status","line_items","order_time_raw","order_date","customer_data","order_price","customer_names","accepted","completed"])
+    new_user_orders_df = pandas.DataFrame(columns=["order_id","fulfillment_status","line_items","order_time_raw","order_date","customer_data","order_price","customer_names","accepted","completed","paid_with_cash_app"])
     new_user_orders_df.to_sql(f'{username}_orders',con=conn,index=False,if_exists="fail")
 
     conn.commit()
@@ -262,7 +262,6 @@ def order_details_parser(item,v2=False):
 
     return raw_df,line_items,customer_info_dict,order_price
 
-#TODO  print/email/text data, account for "CLAIMED" orders , create routing function 
 
 def send_canned_text(eta,customer_name,user,delivery_total):
     message_to_send = f'''ETA {eta} \nHello {customer_name} !  This is {user} with The Sensi Society\nDelivery Total {delivery_total} cash or cash app\nPayments accepted via cash or Cash App: (+$5) Send to $SensiSociety\nDelivery drivers don’t carry change for safety purposes.\nPlease have ID READY upon delivery.\n🙏\nPS: HONESTLY the biggest help you can do is writing a review for us :)\nhttps://g.page/higher-ground-delivery/review?gm\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
@@ -456,4 +455,9 @@ def check_for_claimed(df):
         if i in user_claimed_lst:
             df.drop(df.loc[df.order_ids == i].index,inplace = True)
     return df
-    
+
+
+def cash_app_update(user,item):
+    user_orders_df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = True
+    user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)

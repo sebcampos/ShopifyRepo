@@ -14,8 +14,15 @@ html,body{
 
 .table__header{
     text-align:left;
+    font-size: x-small;
+    white-space:nowrap;
+    font-size: x-small; 
 }
 
 .table__cell {
-    padding: 8px;
+    padding: 4px;
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size: x-small; 
 }

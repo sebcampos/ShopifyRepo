@@ -59,6 +59,8 @@ def user_orders_details():
     except:
         line_items_2,customer_info_dict,order_price,item_check_dict = [], {}, "  Order has been fulfilled or canceled", {}
     if request.method == "POST":
+        if list(request.form.keys())[0] == 'cashapp':
+            cash_app_update(user,item)
         if list(request.form.keys())[0] == 'sku':
             conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
             conn.commit()
@@ -89,7 +91,10 @@ def login_page():
             print(confirmed_session)
             return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
-            return admin_page(request.form["name"])
+            user = request.form["name"]
+            token= "".join([str(random.randint(1,30)) for i in range(0,5)])
+            confirmed_session[user] = token
+            return redirect(url_for("admin_page",user=user,token=token, item=item,code=302,response=200,_scheme="https",_external=True))
         return "<h1>Invalid credentials reload page<h1>"
     return render_template("driver_login.html")
 
@@ -146,8 +151,9 @@ def driver_inventory():
 
 
 @app.route("/admin_page")
-def admin_page(user):
-    return f" Admin Page: {user}"
+def admin_page():
+    df = pandas.read_sql("select * from sebastian_orders",con=conn)
+    return df.to_html()
 
 
 @app.route("/description", methods=["GET","POST"])
