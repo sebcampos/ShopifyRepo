@@ -36,7 +36,151 @@ conn = sqlite3.connect('database.db')
 #twilio config
 client = Client(twilio_config.ACCOUNT_SID, twilio_config.AUTH_TOKEN)
 
-#create a list of valid users
+
+#Login Page_____________________________________________________________________________________
+
+
+#verify login 
+def login_page_verification(confirmed_session):
+    df = pandas.read_sql("select * from users", con=conn)
+    username_lst = get_usernames()
+    #Cheking login credentials
+    if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
+        user = request.form["name"]
+        token= "".join([str(random.randint(1,30)) for i in range(0,5)])
+        confirmed_session[user] = token
+        print(confirmed_session)
+        return "user",user,token
+    elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
+        user = request.form["name"]
+        token= "".join([str(random.randint(1,30)) for i in range(0,5)])
+        confirmed_session[user] = token
+        return "admin",user,token
+    return False
+
+
+#User Inventory_________________________________________________________________________________
+
+
+#collect data for items details page
+def collect_items_details_data(user):
+    sku = request.args.get('item').split("__")[1]
+    df = pandas.read_sql(f"select * from {user} where sku='{sku}'", con=conn)
+    return df,sku
+
+
+
+#post handler for item_details page 
+def item_details_post_handler(user,sku,token):
+    new_val = request.form["updateme"]
+    conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE sku='{sku}'")
+    conn.commit()
+    return user, sku, token
+
+#Orders for USER________________________________________________________________________________
+
+
+#collect data for user orders page
+def collect_user_orders_data(user):
+    df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
+    df.completed = df.completed.apply(lambda x: str(x).split(".")[0])
+    html_df = df.loc[df.fulfillment_status == "UNFULFILLED"][["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
+    return html_df
+
+
+def user_orders_post_handler(user,token):
+        if list(request.form.keys())[0] == 'item':
+            item = request.form["item"]
+            return "item",item
+        if list(request.form.keys())[0] == 'route':
+            lat,lng,coords_lst = order_coords(user)
+            return "route",lat,lng,coords_lst
+
+
+
+#Detials for Order (USER)______________________________________________________________________
+
+#collect data for specified order
+def collect_user_order_details():
+    item = request.args.get('item')
+    try:
+        line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True)
+        option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
+        item_check_dict = update_user_inventory_sale(line_items,user,check=True)
+        line_items_2 = list(zip(option_sku_lst,line_items))
+        return  line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item
+    except:
+        line_items_2, customer_info_dict,order_price, item_check_dict = [], {}, "  Order has been fulfilled or canceled", {}
+
+        return line_items_2, customer_info_dict, order_price, item_check_dict
+
+
+#post handler for user order details page
+def user_order_details_post_handler(user,item,graphQL_id,line_items,customer_info_dict,token, order_price):
+    if list(request.form.keys())[0] == 'cashapp':
+        cash_app_update(user,item)
+    if list(request.form.keys())[0] == 'sku':
+        conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
+        conn.commit()
+        update_user_inventory_sale(line_items,user)
+        fufill_order(graphQL_id)
+        return 'sku',user,token
+    if list(request.form.keys())[0] == 'name':
+        eta = get_eta(customer_info_dict)
+        send_canned_text(eta,customer_info_dict["name"], user, order_price )
+    if list(request.form.keys())[0] == 'route':
+        lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
+        return 'route',lat,lng
+
+
+
+
+#Shopify Unfulfilled Orders____________________________________________________________________
+
+
+#collect data for todays orders from shopify
+def collect_todays_order_data():
+    raw_df = orders_api_call_1()
+    df = raw_df.loc[(raw_df["order_date"] == today_str) | (raw_df["order_date"] == yesterday_str) | (raw_df["order_date"] == tomorrow_str)][["order_ids","fulfillment_status","order_time_raw","name"]]
+    df = check_for_claimed(df)
+    return df
+
+#post handler for order details page
+def order_page_post_handler(user,token):
+        item = request.form["item"]
+        return item
+
+
+#Details for Order (shopify)___________________________________________________________________
+
+
+#collect data for orders details page
+def collect_orders_details_page_data(user):
+    item = request.args.get('item')
+    raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
+    item_check_dict = update_user_inventory_sale(line_items,user,check=True)
+    option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
+    line_items_2 = list(zip(option_sku_lst,line_items))
+    return item, line_items_2, customer_info_dict, order_price, item_check_dict, raw_df
+
+
+#post handler for orders details page
+def orders_details_post_handler(raw_df,item,user,token):
+    df = clean_orders_df(raw_df,item)
+    df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
+    conn.commit()
+    df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    return True
+
+
+
+
+
+
+#system_funcions_______________________________________________________________________________
+
+#collect usernames
 def get_usernames():
     username_lst = pandas.read_sql("select username from users", con=conn).values.tolist()
 
@@ -44,9 +188,7 @@ def get_usernames():
 
     return username_lst
 
-
-#import and numbers: finds the last 20 unfulfilled orders then the first 20 items in each order
-#collect payload from API call
+#last 20 unfulfilled orders then the first 20 items in each order
 def orders_api_call():
     results = shopify.GraphQL().execute('''query {
         orders(first:20, reverse:true,  query:"fulfillment_status:unshipped,fulfillment_status:Pending") {
@@ -122,6 +264,7 @@ def orders_api_call():
 
     return df
 
+#variation of order_api_call function
 def orders_api_call_1():
     results = shopify.GraphQL().execute('''query {
         orders(first:20, reverse:true, query:"fulfillment_status:unshipped,fulfillment_status:Pending") {
@@ -149,14 +292,17 @@ def orders_api_call_1():
     df = pandas.DataFrame(list(zip(order_ids,fulfillment_status,order_create_date,order_created_time,names)), columns=["order_ids","fulfillment_status","order_date","order_time_raw","name"])
     return df
 
+#verify user has logged in
 def verify_session(confirmed_session):
-    token = request.args.get('token')
-    user = request.args.get('user')
+    try:
+        token = request.args.get('token')
+        user = request.args.get('user')
+    except:
+        return False, False
     if confirmed_session[user] == token:
         return user,token
     else:
         return False
-
 
 #Collect items data
 def items_data_call(update = False): 
@@ -229,17 +375,12 @@ def create_user(username,password):
     new_user_orders_df.to_sql(f'{username}_orders',con=conn,index=False,if_exists="fail")
 
     conn.commit()
-
   
 #clear session function
 def clear_shopify_session():
     shopify.ShopifyResource.clear_session()
 
-def verify_webhook(data, hmac_header):
-    digest = hmac.new(API_SECRET_KEY, data.encode('utf-8'), hashlib.sha256).digest()
-    computed_hmac = base64.b64encode(digest)
-    return hmac.compare_digest(computed_hmac, hmac_header.encode('utf-8'))
-
+#parseing data for incoming orders df
 def clean_orders_df(raw_df,item):
     raw_df = raw_df.copy()
     df = raw_df.loc[raw_df.order_id == item]
@@ -249,6 +390,7 @@ def clean_orders_df(raw_df,item):
     df["completed"] = None 
     return df
 
+#paresing data for specified order
 def order_details_parser(item,v2=False):
     raw_df = orders_api_call()
     line_items = raw_df.loc[raw_df.order_id == item]["line_items"].item()
@@ -257,17 +399,17 @@ def order_details_parser(item,v2=False):
     order_price = raw_df.loc[raw_df.order_id == item]["order_price"].item()
     if v2 == True:
         graphQL_id = raw_df.loc[raw_df.order_id == item]["shopify_id"].item()
-        return raw_df,line_items,customer_info_dict,order_price,graphQL_id
+        return line_items,customer_info_dict,order_price,graphQL_id
 
 
     return raw_df,line_items,customer_info_dict,order_price
 
-
+#send canned text to sebastian
 def send_canned_text(eta,customer_name,user,delivery_total):
     message_to_send = f'''ETA {eta} \nHello {customer_name} !  This is {user} with The Sensi Society\nDelivery Total {delivery_total} cash or cash app\nPayments accepted via cash or Cash App: (+$5) Send to $SensiSociety\nDelivery drivers don’t carry change for safety purposes.\nPlease have ID READY upon delivery.\n🙏\nPS: HONESTLY the biggest help you can do is writing a review for us :)\nhttps://g.page/higher-ground-delivery/review?gm\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
     client.messages.create(from_=twilio_config.MY_FIRST_TWILIO_NUMBER, to="6503392346", body=message_to_send)
 
-
+#fufill and mark as paid on shopify
 def fufill_order(shopify_order_id):
     payload = shopify.GraphQL().execute(''' 
            {
@@ -385,7 +527,7 @@ def update_user_inventory_sale(line_items,user,check=False):
             df.loc[df.sku == i, "inventory_quantity"] -= quantity
     return df.to_sql(f"{user}", con=conn, index=False, if_exists="replace")
 
-
+#takes username and date range (query one day after specified date) return summary df 
 def driver_week_summary(username,dates):
     #last date must be a monday
     df = pandas.read_sql(f"select * from {username}_orders",con=conn)
@@ -401,6 +543,7 @@ def driver_week_summary(username,dates):
 
     return df
 
+#check user for missing skus
 def check_for_new_items(user):
     inventory_df = items_data_call()
     user_inventory = pandas.read_sql(f"select * from {user}", con=conn)
@@ -408,6 +551,7 @@ def check_for_new_items(user):
     lst_tups2 = list(zip(user_inventory.display_name.tolist(),user_inventory.sku.tolist()))
     return [i for i in lst_tups if i not in lst_tups2 and type(i[0]) == float and type(i[1]) == str]
 
+#check the option value of a given sku
 def collect_option_value(sku):
     df = pandas.read_sql("select * from items_data",con=conn)
     try:
@@ -418,6 +562,7 @@ def collect_option_value(sku):
 
     return option_sku_value
 
+#collect coordinates for all customers in USER orders
 def order_coords(user):
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     customer_data = [ (json.loads(i.replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
@@ -432,13 +577,14 @@ def order_coords(user):
     
     return lat,lng,lat_and_lng
 
-
+#collect the eta for a given customer
 def get_eta(customer_info_dict):
     lat, lng = customer_info_dict["latitude"],customer_info_dict["longitude"]
     response = requests.get(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
     eta = re.search(r"You should arrive around.*",response.text).group().split(".")[0].replace("You should arrive around","")
     return eta
 
+#check for any claimed orders
 def check_for_claimed(df):
     users = pandas.read_sql("select * from users", con=conn)
     order_lst = df.order_ids.tolist()
@@ -456,7 +602,7 @@ def check_for_claimed(df):
             df.drop(df.loc[df.order_ids == i].index,inplace = True)
     return df
 
-
+#mark order as paid with cash app
 def cash_app_update(user,item):
     user_orders_df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = True

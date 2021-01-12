@@ -9,7 +9,7 @@ nav = Nav(app)
 admin_session = {}
 confirmed_session = {}
 
-
+#Nav Bar
 @nav.navigation('nav_bar')
 def create_navbar():
     inventory_view = View('Inventory', 'driver_inventory',user=request.args.get('user'),token=request.args.get('token'))
@@ -18,169 +18,111 @@ def create_navbar():
     logout = View('Logout','login_page',user=request.args.get('user'), token=request.args.get('token'))
     return Navbar('Mysite', inventory_view, orders_view, user_orders, logout)
 
-@app.route('/webhook', methods=['POST'])
-def handle_webhook():
-    data = request.get_data()
-    verified = verify_webhook(data, request.headers.get('X-Shopify-Hmac-SHA256'))
-
-@app.route("/user_orders", methods=['GET','POST'])
-def user_orders():
-    users_session = verify_session(confirmed_session)
-    if users_session == False:
-        return '<h1>refresh session</h1>'
-    user = users_session[0]
-    token = users_session[1]
-    if request.method == "POST":
-        if list(request.form.keys())[0] == 'item':
-            item = request.form["item"]
-            return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
-        if list(request.form.keys())[0] == 'route':
-            lat,lng,coords_lst = order_coords(user)
-            return render_template("routing_page.html",lat=lat,lng=lng,lst=coords_lst)
-    df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-    df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
-    df.completed = df.completed.apply(lambda x: str(x).split(".")[0])
-    html_df = df.loc[df.fulfillment_status == "UNFULFILLED"][["order_id","fulfillment_status","order_date","customer_names","accepted","completed"]]
-    return render_template("user_orders.html", user=user, df=html_df)
-
-@app.route("/user_orders/details", methods=['GET','POST'])
-def user_orders_details():
-    users_session = verify_session(confirmed_session)
-    if users_session == False:
-        return '<h1>refresh session</h1>'
-    user = users_session[0]
-    token = users_session[1]
-    item = request.args.get('item')
-    try:
-        raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True)
-        option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
-        item_check_dict = update_user_inventory_sale(line_items,user,check=True)
-        line_items_2 = list(zip(option_sku_lst,line_items))
-    except:
-        line_items_2,customer_info_dict,order_price,item_check_dict = [], {}, "  Order has been fulfilled or canceled", {}
-    if request.method == "POST":
-        if list(request.form.keys())[0] == 'cashapp':
-            cash_app_update(user,item)
-        if list(request.form.keys())[0] == 'sku':
-            conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
-            conn.commit()
-            update_user_inventory_sale(line_items,user)
-            fufill_order(graphQL_id)
-            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
-        if list(request.form.keys())[0] == 'name':
-            eta = get_eta(customer_info_dict)
-            send_canned_text(eta,customer_info_dict["name"], user, order_price )
-        if list(request.form.keys())[0] == 'route':
-            lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
-            return redirect(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
-
-
-    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)
-
+#Login Page
 @app.route("/", methods=['GET','POST'])
 def login_page():
-    df = pandas.read_sql("select * from users", con=conn)
-    username_lst = get_usernames()
     render_template("driver_login.html")
     if request.method == "POST":
-        #Cheking login credentials
-        if request.form["name"] in username_lst and request.form["name"] != "admin" and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
-            user = request.form["name"]
-            token= "".join([str(random.randint(1,30)) for i in range(0,5)])
-            confirmed_session[user] = token
-            print(confirmed_session)
-            return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
-        elif request.form["name"] == 'admin' and request.form["password"] == hash_function(df.loc[df["username"] == request.form["name"]].values.tolist()[0][1],unhash=True):
-            user = request.form["name"]
-            token= "".join([str(random.randint(1,30)) for i in range(0,5)])
-            confirmed_session[user] = token
-            return redirect(url_for("admin_page",user=user,token=token, code=302,response=200,_scheme="https",_external=True))
-        return "<h1>Invalid credentials reload page<h1>"
+        response = login_page_verification(confirmed_session)
+        if response[0] == 'user':
+            return redirect(url_for("driver_inventory",user=response[1],token=response[2],code=302,response=200,_scheme="https",_external=True))
+        if response[0] == 'admin':
+            return redirect(url_for("admin_page",user=response[1],token=response[2],code=302,response=200,_scheme="https",_external=True))
     return render_template("driver_login.html")
 
-@app.route("/todays_orders",methods=["GET","POST"])
-def order_page():
-    users_session = verify_session(confirmed_session)
-    if users_session == False:
-        return '<h1>refresh session</h1>'
-    user = users_session[0]
-    token = users_session[1]
-    raw_df = orders_api_call_1()
-    df = raw_df.loc[(raw_df["order_date"] == today_str) | (raw_df["order_date"] == yesterday_str) | (raw_df["order_date"] == tomorrow_str)][["order_ids","fulfillment_status","order_time_raw","name"]]
-    df = check_for_claimed(df)
-    #df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
-    if request.method == "POST":
-        item = request.form["item"]
-        return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200,_scheme="https",_external=True))
-    return render_template('todays_orders.html',df=df)
-
-@app.route("/todays_orders/order_details",methods=["GET","POST"])
-def order_details():
-    users_session = verify_session(confirmed_session)
-    if users_session == False:
-        return '<h1>refresh session</h1>'
-    user = users_session[0]
-    token = users_session[1]
-    item = request.args.get('item')
-    raw_df,line_items,customer_info_dict,order_price = order_details_parser(item) #,graphQL_id
-    item_check_dict = update_user_inventory_sale(line_items,user,check=True)
-    option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
-    line_items_2 = list(zip(option_sku_lst,line_items))
-    if request.method == "POST":
-        df = clean_orders_df(raw_df,item)
-        df.to_sql(f"{user}_orders",con=conn, index=False, if_exists="append")
-        conn.commit()
-        df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
-    return render_template("orders_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
-
+#User Inventory
 @app.route("/driver_inventory", methods=["GET","POST"])
 def driver_inventory():
-    users_session = verify_session(confirmed_session)
-    if users_session == False:
+    user, token = verify_session(confirmed_session)
+    if user == False or token == False:
         return '<h1>refresh session</h1>'
-    user = users_session[0]
-    token = users_session[1]
     df = pandas.read_sql(f"select * from {user}", con=conn)
-    #cdf.drop("index",axis=1,inplace=True)
     if request.method == "POST":
         item = request.form["item"]
         return redirect(url_for("item_details",user=user,item=item, token=token,code=302,response=200,_scheme="https",_external=True))
 
     return render_template("driver_inventory.html",df=df,user=user)
 
+#Details on Inventory Item (USER)
+@app.route("/description", methods=["GET","POST"])
+def item_details():
+    user, token = verify_session(confirmed_session)
+    if user == False or token == False:
+        return '<h1>refresh session</h1>'
+    df, sku = collect_items_details_data(user)
+    if request.method == "POST":
+        response = item_details_post_handler(user, sku, token)
+        return redirect(url_for("driver_inventory",user=response[0],token=response[-1],code=302,response=200,_scheme="https",_external=True))
 
+    return render_template("update_items.html",df=df)
+
+#Orders for USER
+@app.route("/user_orders", methods=['GET','POST'])
+def user_orders():
+    user, token = verify_session(confirmed_session)
+    if user == False or token == False:
+        return '<h1>refresh session</h1>'
+    if request.method == "POST":
+        response = user_orders_post_handler(user,token)
+        if response[0] == 'route':
+            return render_template("routing_page.html",lat=response[1],lng=response[2],lst=response[3])
+        if response[0] == 'item':
+            return redirect(url_for('user_orders_details',user=user,token=token,item=response[1],code=302,response=200,_scheme="https",_external=True))
+    df = collect_user_orders_data(user)
+    return render_template("user_orders.html", user=user, df=df)
+
+#Detials for Order (USER)
+@app.route("/user_orders/details", methods=['GET','POST'])
+def user_orders_details():
+    user, token = verify_session(confirmed_session)
+    if user == False or token == False:
+        return '<h1>refresh session</h1>'
+    line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item = collect_user_order_details()
+    if request.method == "POST":
+        response = user_order_details_post_handler(user,item,graphQL_id,line_items,customer_info_dict,token, order_price)
+        if response[0] == "sku":
+            return redirect(url_for("user_orders",user=response[1],token=response[2],code=302,response=200,_scheme="https",_external=True))
+        if response[0] == 'route':
+            return redirect(f"https://www.google.com/maps/dir/?api=1&destination={response[1]},{response[2]}&travelmode=driving&dir_action=navigate")
+
+    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)
+
+#Shopify Unfulfilled Orders
+@app.route("/todays_orders",methods=["GET","POST"])
+def order_page():
+    user, token = verify_session(confirmed_session)
+    if user == False or token == False:
+        return '<h1>refresh session</h1>'
+    df = collect_todays_order_data()
+    if request.method == "POST":
+        item = order_page_post_handler(user,token)
+        return redirect(url_for("order_details",user=user,token=token, item=item,code=302,response=200,_scheme="https",_external=True))
+    return render_template('todays_orders.html',df=df)
+
+#Details for Order (shopify)
+@app.route("/todays_orders/order_details",methods=["GET","POST"])
+def order_details():
+    user, token = verify_session(confirmed_session)
+    if user == False or token == False:
+        return '<h1>refresh session</h1>'
+    item, line_items_2, customer_info_dict, order_price, item_check_dict, raw_df = collect_orders_details_page_data(user)
+    if request.method == "POST":
+        orders_details_post_handler(raw_df,item,user,token)
+        return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
+
+    return render_template("orders_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
+
+#Admin Page
 @app.route("/admin_page")
 def admin_page():
     df = pandas.read_sql("select * from sebastian_orders",con=conn)
     return df.to_html()
 
-
-@app.route("/description", methods=["GET","POST"])
-def item_details():
-    users_session = verify_session(confirmed_session)
-    if users_session == False:
-        return '<h1>refresh session</h1>'
-    user = users_session[0]
-    token = users_session[1]
-    item = request.args.get('item').split("__")[0]
-    sku = request.args.get('item').split("__")[1]
-    df = pandas.read_sql(f"select * from {user} where sku='{sku}'", con=conn)
-    print(df)
-    if request.method == "POST":
-        new_val = request.form["updateme"]
-        conn.execute(f"UPDATE {user} SET inventory_quantity={new_val} WHERE sku='{sku}'")
-        conn.commit()
-        return redirect(url_for("driver_inventory",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
-    return render_template("update_items.html",df=df)
-
-
+#install link
 @app.route("/install",methods=['GET'])
 def install():
     print("intalling...")
     return "install page"
-
-
 
 
 if __name__ == "__main__":
