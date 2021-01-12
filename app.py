@@ -70,7 +70,7 @@ def user_orders_details():
             send_canned_text(eta,customer_info_dict["name"], user, order_price )
         if list(request.form.keys())[0] == 'route':
             lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
-            return render_template("routing_page.html",lat=lat,lng=lng)
+            return redirect(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
 
 
     return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)

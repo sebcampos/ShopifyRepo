@@ -414,7 +414,7 @@ def collect_option_value(sku):
     try:
         option_sku_value = df.loc[df["Variant SKU"] == sku,'Option1 Value'].item()
     except:
-        option_sku_value = "null"
+        option_sku_value = "Tip"
 
 
     return option_sku_value
