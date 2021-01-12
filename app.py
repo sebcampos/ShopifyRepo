@@ -35,8 +35,7 @@ def user_orders():
             item = request.form["item"]
             return redirect(url_for('user_orders_details',user=user,token=token,item=item,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'route':
-            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-            lat,lng,coords_lst = order_coords(df)
+            lat,lng,coords_lst = order_coords(user)
             return render_template("routing_page.html",lat=lat,lng=lng,lst=coords_lst)
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
     df.accepted = df.accepted.apply(lambda x: str(x).split(".")[0])
@@ -67,8 +66,8 @@ def user_orders_details():
             fufill_order(graphQL_id)
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'name':
-            send_canned_text("30",customer_info_dict["name"], user, order_price )
-            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
+            eta = get_eta(customer_info_dict)
+            send_canned_text(eta,customer_info_dict["name"], user, order_price )
         if list(request.form.keys())[0] == 'route':
             lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
             return render_template("routing_page.html",lat=lat,lng=lng)
