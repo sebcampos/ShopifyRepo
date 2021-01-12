@@ -1,7 +1,9 @@
 
-#TODO add order_coords to app.py and to parsedata.py, added button to user orders html and edited the user orders page function, changed routing.js functions, changed routing.html
-# add D3 library to routing page 
+#TODO added re and requests, edidted the user orders details routing button functionality
 from parsedata import *
+import requests
+import re
+import pprint
 
 app = Flask(__name__)
 
@@ -57,6 +59,7 @@ def user_orders_details():
     user = users_session[0]
     token = users_session[1]
     item = request.args.get('item')
+    print(item)
     try:
         raw_df,line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True)
         option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
@@ -72,11 +75,16 @@ def user_orders_details():
             fufill_order(graphQL_id)
             return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
         if list(request.form.keys())[0] == 'name':
-            send_canned_text("30",customer_info_dict["name"], user, order_price )
-            return redirect(url_for("user_orders",user=user,token=token,code=302,response=200,_scheme="https",_external=True))
+            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+            lat, lng =  order_coords_2(df,item)
+            #lat, lng = customer_info_dict["latitude"],customer_info_dict["longitude"]
+            response = requests.get(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
+            eta = re.search(r"You should arrive around.*",response.text).group().split(".")[0].replace("You should arrive around","")
+            send_canned_text(eta,"customer_name", user, order_price )
         if list(request.form.keys())[0] == 'route':
-            lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
-            return render_template("routing_page.html",lat=lat,lng=lng)
+            df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+            lat, lng =  order_coords_2(df,item)
+            return redirect(f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}&travelmode=driving&dir_action=navigate")
 
 
     return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)

@@ -431,3 +431,11 @@ def order_coords(df):
 
     
     return lat,lng,lat_and_lng
+
+def order_coords_2(df,order_id):
+    customer_data = df.loc[df.order_id == order_id,"customer_data"].item()
+    print(customer_data)
+    customer_data = json.loads(customer_data.replace(r"'" ,r'"' ))
+    print(type(customer_data))
+    lat,lng = customer_data["latitude"],customer_data["longitude"]
+    return lat,lng
