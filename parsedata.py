@@ -440,3 +440,20 @@ def get_eta(customer_info_dict):
     eta = re.search(r"You should arrive around.*",response.text).group().split(".")[0].replace("You should arrive around","")
     return eta
 
+def check_for_claimed(df):
+    users = pandas.read_sql("select * from users", con=conn)
+    order_lst = df.order_ids.tolist()
+    df_lst = []
+    for i in users.username.tolist():
+        if i != "admin":
+            df_user_orders = pandas.read_sql(f"select * from {i}_orders",con=conn)
+            df_lst.append(df_user_orders)
+    user_claimed_lst = []
+    for i in df_lst:
+        for i in i.order_id:
+            user_claimed_lst.append(i)
+    for i in order_lst:
+        if i in user_claimed_lst:
+            df.drop(df.loc[df.order_ids == i].index,inplace = True)
+    return df
+    

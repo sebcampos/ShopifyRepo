@@ -16,6 +16,7 @@
             <h1>{{ id }}</h1>
             <h2><i> ${{ order_price }} </i></h2>
             <h2>{{ dict1["name"] }}</h2>
+            <p>{{ dict1["phone"] }}</p>
             <form action='#' method="POST">
                     <button id="route" name="route" type="submit" class="btn btn-primary">Start Navigation</button>
                     
@@ -48,7 +49,7 @@
                     <p>{{ i[1]["node"]["product"]["description"] }}</p>
                     {% endfor %}
                 </div>
-                <button name="sku" value="{{ id }}" type="submit" class="btn btn-primary">Complete Order</button>
+                <button name="sku" value="{{ id }}" type="submit" class="btn btn-primary btn-block">Complete Order</button>
             </form>
 
 

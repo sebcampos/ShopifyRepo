@@ -102,6 +102,7 @@ def order_page():
     token = users_session[1]
     raw_df = orders_api_call_1()
     df = raw_df.loc[(raw_df["order_date"] == today_str) | (raw_df["order_date"] == yesterday_str) | (raw_df["order_date"] == tomorrow_str)][["order_ids","fulfillment_status","order_time_raw","name"]]
+    df = check_for_claimed(df)
     #df = raw_df[["order_ids","fulfillment_status","order_time_raw","name"]]
     if request.method == "POST":
         item = request.form["item"]
