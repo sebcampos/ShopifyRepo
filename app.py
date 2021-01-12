@@ -94,7 +94,7 @@ def login_page():
             user = request.form["name"]
             token= "".join([str(random.randint(1,30)) for i in range(0,5)])
             confirmed_session[user] = token
-            return redirect(url_for("admin_page",user=user,token=token, item=item,code=302,response=200,_scheme="https",_external=True))
+            return redirect(url_for("admin_page",user=user,token=token, code=302,response=200,_scheme="https",_external=True))
         return "<h1>Invalid credentials reload page<h1>"
     return render_template("driver_login.html")
 
