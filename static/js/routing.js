@@ -9,7 +9,8 @@ let infoWindow;
 function initMap() {
   map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: 37.4356173, lng: -122.4281 },
-    zoom: 6,
+    zoom: 8,
+    mapId: '8a587080218f3071'
   });
   var directionsService = new google.maps.DirectionsService();
   var directionsRenderer = new google.maps.DirectionsRenderer();
