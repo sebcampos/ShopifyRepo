@@ -370,10 +370,10 @@ def update_user_inventory_sale(line_items,user,check=False):
                 quantity = sku_quantity_dict[i]
                 if df.loc[df.sku == i, "inventory_quantity"].item() >= quantity:
                     new_dict[df.loc[df.sku == i, "display_name"].item()] = True
-                else:
+                elif df.loc[df.sku == i, "inventory_quantity"].item() < quantity:
                     new_dict[df.loc[df.sku == i, "display_name"].item()] = "False"
             elif i not in df.sku.tolist():
-                new_dict["VARIANT"] = "sku has no Title"
+                new_dict["VARIANT(Tip)"] = "sku has no Title"
         return new_dict
                 
 
