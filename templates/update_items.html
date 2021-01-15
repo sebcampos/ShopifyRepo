@@ -38,12 +38,19 @@
                 <th class="table__cell">Display Name</th>
                 <th class="table__cell">SKU</th>
                 <th class="table__cell">Driver Inventory</th>
+                <th class="table__cell">Line item price</th>
             </tr>
             <tr class="table__row">
                 <td class="table__cell">{{df['display_name'].item()}}</td>
                 <td class="table__cell">{{df['sku'].item()}}</td>
                 <td id="DriverInventory" class="table__cell">{{df['inventory_quantity'].item()}}</td>
+                <td id="Price" class="table__cell">${{price}}</td>
             </tr>
+            </tbody>
+        </table>
+        <img src="{{image}}" width="25%" height="auto">
+            {{ html_data|safe }} 
+            
         </div>
     </div>
     <script src="../static/js/update_inventory.js"></script>

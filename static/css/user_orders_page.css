@@ -1,5 +1,6 @@
 html,body{
     overflow-x: hidden;
+    background-image: url("../images/blue_backround.png");
 }
 
 .table {
@@ -20,7 +21,7 @@ html,body{
 }
 
 .table__cell {
-    padding: 4px;
+    padding: 3px;
     overflow: hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
