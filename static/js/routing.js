@@ -17,6 +17,8 @@ function initMap() {
   directionsRenderer.setMap(map);
   infoWindow = new google.maps.InfoWindow();
   const locationButton = document.createElement("button");
+  locationButton.style.width= "200px";
+  locationButton.style.height= "100px";
   locationButton.textContent = "Route";
   locationButton.classList.add("custom-map-control-button");
   map.controls[google.maps.ControlPosition.TOP_CENTER].push(locationButton);

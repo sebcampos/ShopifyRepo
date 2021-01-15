@@ -13,6 +13,9 @@
 
   </head>
   <body>
+    {% block navbar %}
+    {{nav.nav_bar.render()}}
+    {% endblock %}
     <div class="container-fluid"></div>
     <div id="map"></div>
   </body>

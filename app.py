@@ -67,7 +67,6 @@ def user_orders():
     if request.method == "POST":
         response = user_orders_post_handler(user,token)
         if response[0] == 'route':
-            print(response)
             return render_template("routing_page.html",lat=response[1],lng=response[2],lst=response[3])
         if response[0] == 'item':
             return redirect(url_for('user_orders_details',user=user,token=token,item=response[1],code=302,response=200,_scheme="https",_external=True))
