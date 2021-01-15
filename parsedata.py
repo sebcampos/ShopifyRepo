@@ -1,6 +1,6 @@
 import shopify
 import pandas
-from flask import Flask, redirect, url_for, request, render_template, session
+from flask import Flask, redirect, url_for, request, render_template, session, send_from_directory
 from flask_ngrok import run_with_ngrok
 from flask_nav import Nav
 from flask_nav.elements import Navbar, Subgroup, View
@@ -101,6 +101,11 @@ def user_orders_post_handler(user,token):
         if list(request.form.keys())[0] == 'route':
             lat,lng,coords_lst = order_coords(user)
             return "route",lat,lng,coords_lst
+        if list(request.form.keys())[0] == 'log':
+            df = pandas.read_sql(f'select * from {user}_orders',con=conn)
+            df.set_index("order_id",inplace=True)
+            df.drop('line_items',axis=1,inplace=True)
+            return "log",df
 
 
 

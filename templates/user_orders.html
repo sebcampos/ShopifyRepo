@@ -19,7 +19,15 @@
             <form action='#' method="POST">
             <h1>{{ user }} Orders</h1>
             <br></br>
-            <button name="route" class="center btn btn-primary" type="submit">Map All Orders</button>
+            <div class="row">
+                <div class="col-6 col-sm-4" style="float:left;">
+                    <button name="route" class="center btn btn-primary" type="submit">Map All Orders</button> 
+                </div>
+                <div class="col-6 col-sm-4" style="float:right;">
+                    <button name="log" class="center btn btn-primary" type="submit">Orders Log</button>
+                </div>
+            </div>
+
             <br></br>
             <table id="myTable" class="table">
                 <tbody>

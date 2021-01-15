@@ -9,6 +9,12 @@ nav = Nav(app)
 admin_session = {}
 confirmed_session = {}
 
+
+#Favicon Directory
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 #Nav Bar
 @nav.navigation('nav_bar')
 def create_navbar():
@@ -70,6 +76,8 @@ def user_orders():
             return render_template("routing_page.html",lat=response[1],lng=response[2],lst=response[3])
         if response[0] == 'item':
             return redirect(url_for('user_orders_details',user=user,token=token,item=response[1],code=302,response=200,_scheme="https",_external=True))
+        if response[0] == "log":
+            return response[1].to_html()
     df = collect_user_orders_data(user)
     return render_template("user_orders.html", user=user, df=df)
 
