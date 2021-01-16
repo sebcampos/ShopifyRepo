@@ -20,12 +20,16 @@
             <h2><i> ${{ order_price }} </i></h2>
             <h2>{{ dict1["name"] }}</h2>
             <p>{{ dict1["phone"] }}</p>
-            <p>{{ dict1["address1"] dict1["address2"] }}</p>
+            <p>{{ dict1["address1"] }} {{ dict1["address2"] }}</p>
             <form action='#' method="POST">
-                    <button id="route" name="route" type="submit" class="btn btn-primary">Start Navigation</button>
-                    
-                    <button name="name" value="name" type="submit" class="btn btn-primary">Canned Text</button>
-                    
+                <div class="row">
+                    <div class="col-6 col-sm-4" style="float:left;">
+                        <button id="route" name="route" type="submit" class="btn btn-primary">Start Navigation</button>
+                    </div>
+                    <div class="col-6 col-sm-4" style="float:right;">
+                        <button name="name" value="name" type="submit" class="btn btn-primary">Canned Text</button>
+                    </div>
+                </div>
                     <br></br>
                     <h2>Fulfillable</h2>
                     {% for i in item_check_dict %}

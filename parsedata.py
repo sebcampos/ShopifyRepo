@@ -112,7 +112,7 @@ def user_orders_post_handler(user,token):
 '''Detials for Order (USER)______________________________________________________________________'''
 
 #collect data for specified order
-def collect_user_order_details():
+def collect_user_order_details(user):
     item = request.args.get('item')
     try:
         line_items,customer_info_dict,order_price,graphQL_id  = order_details_parser(item,v2=True)

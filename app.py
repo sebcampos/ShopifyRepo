@@ -87,7 +87,7 @@ def user_orders_details():
     user, token = verify_session(confirmed_session)
     if user == False or token == False:
         return '<h1>refresh session</h1>'
-    line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item = collect_user_order_details()
+    line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item = collect_user_order_details(user)
     if request.method == "POST":
         response = user_order_details_post_handler(user,item,graphQL_id,line_items,customer_info_dict,token, order_price)
         if response[0] == "sku":
