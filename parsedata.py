@@ -129,7 +129,8 @@ def collect_user_order_details(user):
 #post handler for user order details page
 def user_order_details_post_handler(user,item,graphQL_id,line_items,customer_info_dict,token, order_price):
     if list(request.form.keys())[0] == 'cashapp':
-        cash_app_update(user,item)
+        response = cash_app_update(user,item)
+        return 'cashapp',response
     if list(request.form.keys())[0] == 'sku':
         conn.execute(f"UPDATE {user}_orders SET completed='{datetime.datetime.now()}',fulfillment_status='FULFILLED' WHERE order_id='{item}'")
         conn.commit()
@@ -139,6 +140,7 @@ def user_order_details_post_handler(user,item,graphQL_id,line_items,customer_inf
     if list(request.form.keys())[0] == 'name':
         eta = get_eta(customer_info_dict)
         send_canned_text(eta,customer_info_dict["name"], user, order_price )
+        return "cannedtext",'<h1>Text Message Sent</h1>'
     if list(request.form.keys())[0] == 'route':
         lat , lng = customer_info_dict["latitude"], customer_info_dict["longitude"]
         return 'route',lat,lng
@@ -152,7 +154,9 @@ def user_order_details_post_handler(user,item,graphQL_id,line_items,customer_inf
 #collect data for todays orders from shopify
 def collect_todays_order_data():
     raw_df = orders_api_call_1()
+    #print(f"\n\nDF 1:{raw_df}\n\n")
     df = raw_df.loc[(raw_df["order_date"] == today_str) | (raw_df["order_date"] == yesterday_str) | (raw_df["order_date"] == tomorrow_str)][["order_ids","fulfillment_status","order_time_raw","name"]]
+    #print(f"\n\nDF 2:{df}\n\n")
     df = check_for_claimed(df)
     return df
 
@@ -649,5 +653,10 @@ def check_for_claimed(df):
 #mark order as paid with cash app
 def cash_app_update(user,item):
     user_orders_df = pandas.read_sql(f"select * from {user}_orders",con=conn)
+    if user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"].item() == 1:
+        user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = None
+        user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
+        return "<h1>Marked as Cash</h1>"
     user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = True
     user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
+    return "<h1>Marked with CashAPP</h1>"

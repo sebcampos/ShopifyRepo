@@ -31,7 +31,7 @@ def login_page():
     if request.method == "POST":
         response = login_page_verification(confirmed_session)
         if response == False:
-            return "Invalid Creds"
+            return "<h1>Invalid Creds</h1>"
         if response[0] == 'user':
             return redirect(url_for("driver_inventory",user=response[1],token=response[2],code=302,response=200,_scheme="https",_external=True))
         if response[0] == 'admin':
@@ -43,7 +43,7 @@ def login_page():
 def driver_inventory():
     user, token = verify_session(confirmed_session)
     if user == False or token == False:
-        return '<h1>refresh session</h1>'
+        return '<h1>Login in expired</h1>'
     df = pandas.read_sql(f"select * from {user}", con=conn)
     if request.method == "POST":
         item = request.form["item"]
@@ -90,6 +90,10 @@ def user_orders_details():
     line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item = collect_user_order_details(user)
     if request.method == "POST":
         response = user_order_details_post_handler(user,item,graphQL_id,line_items,customer_info_dict,token, order_price)
+        if response[0] == "cashapp":
+            return response[1]
+        if response[0] == "cannedtext":
+            return response[1]
         if response[0] == "sku":
             return redirect(url_for("user_orders",user=response[1],token=response[2],code=302,response=200,_scheme="https",_external=True))
         if response[0] == 'route':
