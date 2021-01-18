@@ -18,20 +18,20 @@ def favicon():
 #Favicon Directory
 @app.route('/apple-touch-icon-120x120-precomposed.png')
 def favicon_apple120_pre():
-    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'apple-touch-icon.png', mimetype='image/vnd.microsoft.icon')
 
 #Favicon Directory
 @app.route('/apple-touch-icon-120x120.png')
 def favicon_apple120():
-    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'apple-touch-icon.png', mimetype='image/vnd.microsoft.icon')
 
 #Favicon Directory
 @app.route('/apple-touch-icon-precomposed.png')
 def favicon_apple_pre():
-    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'apple-touch-icon.png', mimetype='image/vnd.microsoft.icon')
 
 #Favicon Directory
-@app.route('apple-touch-icon.png')
+@app.route('/apple-touch-icon.png')
 def apple_touch_icon():
     return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'apple-touch-icon.png', mimetype='image/vnd.microsoft.icon')
 
@@ -151,9 +151,10 @@ def order_details():
 #Admin Page
 @app.route("/admin_page")
 def admin_page():
-    df = pandas.read_sql("select * from sebastian_orders",con=conn)
+    df = pandas.read_sql("select * from angelo_orders",con=conn)
     return df.to_html()
 
+    
 #install link
 @app.route("/install",methods=['GET'])
 def install():
