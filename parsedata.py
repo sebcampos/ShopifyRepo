@@ -394,7 +394,7 @@ def create_user():
     conn.execute(f'INSERT INTO users (username, hash_key, phone_number) VALUES ("{username}","{password}","{phone_number}")')
     conn.commit()
 
-    new_user_df.to_sql(f'{username}',con=conn,if_exists="fail")
+    new_user_df.to_sql(f'{username}',con=conn,if_exists="fail",index=False)
 
     new_user_orders_df = pandas.DataFrame(columns=["order_id","fulfillment_status","line_items","order_time_raw","order_date","customer_data","order_price","customer_names","accepted","completed","paid_with_cash_app"])
     new_user_orders_df.to_sql(f'{username}_orders',con=conn,index=False,if_exists="fail")
