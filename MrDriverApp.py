@@ -188,6 +188,12 @@ def orders_details_post_handler(raw_df,item,user,token):
     return True
 
 
+'''Admin Page____________________________________________________________________________________'''
+#post handler for admin page
+def admin_page_post_handler():
+    if list(request.form.keys())[0] == 'users':
+        response = driver_week_summary(f"{username}",[start_date,end_date])
+
 
 
 

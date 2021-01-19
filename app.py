@@ -149,10 +149,13 @@ def order_details():
     return render_template("orders_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price, item_check_dict=item_check_dict)
 
 #Admin Page
-@app.route("/admin_page")
+@app.route("/admin_page",methods=["GET","POST"])
 def admin_page():
-    df = pandas.read_sql("select * from angelo_orders",con=conn)
-    return df.to_html()
+    usernames = get_usernames()
+    if request.method == "POST":
+        response = admin_page_post_handler()
+        if response[0] == ""
+    return render_template("admin_page.html",usernames=usernames,today=today_str)
 
     
 #install link
