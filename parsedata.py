@@ -371,8 +371,6 @@ def items_data_call(update = False):
 
     inventory_df.dropna(how="all",inplace=True)
 
-    inventory_df = inventory_df.drop("index",axis=1)
-
     return inventory_df
 
 #create new user and related tables
