@@ -154,7 +154,9 @@ def admin_page():
     usernames = get_usernames()
     if request.method == "POST":
         response = admin_page_post_handler()
-        if response[0] == ""
+        if response[0] == "submit":
+            return "form is submited"
+
     return render_template("admin_page.html",usernames=usernames,today=today_str)
 
     
