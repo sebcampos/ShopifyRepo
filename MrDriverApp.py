@@ -323,7 +323,7 @@ def verify_session(confirmed_session):
         if confirmed_session[user] == token:
             return user,token
         else:
-            return False
+            return False,False
     except:
         return False, False
 
@@ -371,9 +371,8 @@ def items_data_call(update = False):
             else:
                 column.append(None)
         lst.append(column)
-    
-    inventory_df = raw_df[["Title","Variant-SKU","Variant-Inventory-Qty"]]
-    inventory_df.columns = ['display_name','sku','inventory_quantity']
+    inventory_df = raw_df[["Title","Variant-SKU","Variant-Inventory-Qty","Variant-Price"]]
+    inventory_df.columns = ['display_name','sku','inventory_quantity','line_item_price']
 
     inventory_df.dropna(how="all",inplace=True)
 
