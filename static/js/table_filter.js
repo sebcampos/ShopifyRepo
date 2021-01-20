@@ -68,7 +68,7 @@ function myFunction_3() {
 function myFunction_4() {
   // Declare variables
   var input, filter, table, tr, td, i, txtValue;
-  input = document.getElementById("myInput_3");
+  input = document.getElementById("myInput_4");
   filter = input.value.toUpperCase();
   table = document.getElementById("myTable");
   tr = table.getElementsByTagName("tr");
