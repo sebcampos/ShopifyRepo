@@ -405,8 +405,12 @@ def create_user():
     new_user_orders_df.to_sql(f'{username}_orders',con=conn,index=False,if_exists="fail")
   
 #clear session function
-def clear_shopify_session():
+def reset_shopify_session():
     shopify.ShopifyResource.clear_session()
+    session = shopify.Session("https://seni-society-delivery.myshopify.com",'2020-10',access_token)
+    shopify.ShopifyResource.activate_session(session)
+    return True
+
 
 #parseing data for incoming orders df
 def clean_orders_df(raw_df,item):
