@@ -376,6 +376,16 @@ def items_data_call(update = False):
 
     inventory_df.dropna(how="all",inplace=True)
 
+    #add titles to the untitled variant skus by handles
+    print(raw_df.dropna())
+    inventory_df["display_name"] = inventory_df.display_name.apply(lambda x: "None" if type(x) != str else x)
+    empty_skus = inventory_df.loc[inventory_df.display_name == "None", "sku"].tolist()
+    sku_and_handles_dict = {i:raw_df.loc[raw_df["Variant-SKU"] == i,"Handle"].item() for i in empty_skus}
+    sku_and_titles_dict = {i:raw_df.loc[raw_df["Handle"] == v, "Title"].tolist()[0] for i,v in sku_and_handles_dict.items()}
+    for i,v in sku_and_titles_dict.items():
+        inventory_df.loc[inventory_df.sku == i, "display_name"] = v
+
+
     return inventory_df
 
 #create new user and related tables
@@ -436,11 +446,11 @@ def order_details_parser(item,v2=False):
 
     return raw_df,line_items,customer_info_dict,order_price
 
-#send canned text to sebastian
+#send canned text to user designated number
 def send_canned_text(eta,customer_name,user,delivery_total):
     user_df = pandas.read_sql("select * from users",con=conn)
     user_phone_number = user_df.loc[user_df.username == user,"phone_number"].item()
-    message_to_send = f'''ETA {eta} \nHello {customer_name} !  This is {user} with The Sensi Society\nDelivery Total {delivery_total} cash or cash app\nPayments accepted via cash or Cash App: {float(delivery_total) + 5.00} (+$5) Send to $SensiSociety\nDelivery drivers don’t carry change for safety purposes.\nPlease have ID READY upon delivery.\n🙏\nPS: HONESTLY the biggest help you can do is writing a review for us :)\nhttps://g.page/higher-ground-delivery/review?gm\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
+    message_to_send = f'''ETA {eta} \n\nHello {customer_name} !  This is {user} with The Sensi Society\n\nDelivery Total {delivery_total} cash or cash app\n\nPayments accepted via cash or Cash App: {float(delivery_total) + 5.00} (+$5) Send to $SensiSociety\n\nDelivery drivers don’t carry change for safety purposes.\n\nPlease have ID READY upon delivery.\n\n🙏\n\nPS: HONESTLY the biggest help you can do is writing a review for us :)\n\nhttps://g.page/higher-ground-delivery/review?gm\n\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
     client.messages.create(from_=twilio_config.MY_FIRST_TWILIO_NUMBER, to=user_phone_number, body=message_to_send)
 
 #fufill and mark as paid on shopify
