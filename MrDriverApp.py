@@ -192,7 +192,11 @@ def orders_details_post_handler(raw_df,item,user,token):
 #post handler for admin page
 def admin_page_post_handler():
     if list(request.form.keys())[0] == 'users':
-        response = driver_week_summary(f"{username}",[start_date,end_date])
+        user = request.form['users']
+        start_date = request.form['trip-start']
+        end_date = request.form['trip-end']
+        return driver_week_summary(user,[start_date,end_date])
+
 
 
 
@@ -450,7 +454,7 @@ def order_details_parser(item,v2=False):
 def send_canned_text(eta,customer_name,user,delivery_total):
     user_df = pandas.read_sql("select * from users",con=conn)
     user_phone_number = user_df.loc[user_df.username == user,"phone_number"].item()
-    message_to_send = f'''ETA {eta} \n\nHello {customer_name} !  This is {user} with The Sensi Society\n\nDelivery Total {delivery_total} cash or cash app\n\nPayments accepted via cash or Cash App: {float(delivery_total) + 5.00} (+$5) Send to $SensiSociety\n\nDelivery drivers don’t carry change for safety purposes.\n\nPlease have ID READY upon delivery.\n\n🙏\n\nPS: HONESTLY the biggest help you can do is writing a review for us :)\n\nhttps://g.page/higher-ground-delivery/review?gm\n\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
+    message_to_send = f'''ETA {eta} \n\nHello {customer_name} !  This is {user} with The Sensi Society\n\nDelivery Total {delivery_total} cash or {float(delivery_total) + 5.00} cash app\n\nPayments accepted via cash or Cash App: (+$5) Send to $SensiSociety\n\nDelivery drivers don’t carry change for safety purposes.\n\nPlease have ID READY upon delivery.\n\n🙏\n\nPS: HONESTLY the biggest help you can do is writing a review for us :)\n\nhttps://g.page/higher-ground-delivery/review?gm\n\nThank you so much for your order!\nNeed to Order again?\nLive Menu: TheSensiSociety.com'''
     client.messages.create(from_=twilio_config.MY_FIRST_TWILIO_NUMBER, to=user_phone_number, body=message_to_send)
 
 #fufill and mark as paid on shopify
@@ -595,18 +599,19 @@ def driver_week_summary(username,dates):
     df = pandas.read_sql(f"select * from {username}_orders",con=conn)
     df.paid_with_cash_app.fillna(0.0,inplace=True)
     df.paid_with_cash_app = df.paid_with_cash_app.apply(lambda x: float(x))
-    df = df.loc[(pandas.to_datetime(df.completed) > pandas.to_datetime(dates[0])) & (pandas.to_datetime(df.completed) < pandas.to_datetime(dates[1])) & (df.fulfillment_status == "FULFILLED")]
+    df = df.loc[(pandas.to_datetime(df.completed) > pandas.to_datetime(dates[0])) & (pandas.to_datetime(df.completed) < pandas.to_datetime(dates[1]) + datetime.timedelta(days=1)) & (df.fulfillment_status == "FULFILLED")]
 
     driver_estimate_pay = df.order_price.count() * 15
     total_money_brought_in = df.loc[df.paid_with_cash_app < 1, "order_price"].sum()
     paid_with_cash_app_lst = df.paid_with_cash_app.apply(lambda x: "CASH APP" if x == 1  else "COD").tolist()
     total_orders_delivered = df.completed.count()
-    print(f"Estimate Pay:\t\t\t{driver_estimate_pay}\nTotal Collected:\t\t{total_money_brought_in}\nOrders Delivered:\t\t{total_orders_delivered}\n")
-    print(f"Orders for {dates[0]} to {dates[1]}:")
+    return_me = ""
+    return_me +=  f"<h2>Estimate Pay: {driver_estimate_pay}<br></br>Total Cash Collected: {total_money_brought_in}<br></br>Orders Delivered: {total_orders_delivered}</h2>"
+    return_me +=  f"<br></br><h3>Orders for {dates[0]} to {dates[1]}:</h3>"
     for i in range(len(df.completed.tolist())):
-        print("\t","CUSTOMER",df.customer_names.tolist()[i],"\n\t ORDER PRICE",df.order_price.tolist()[i],"\n\t","TIMESTAMP",df.completed.tolist()[i],"\n\t","PAYMENT METHOD",paid_with_cash_app_lst[i],"\n")
+        return_me += f"<p align='center'>CUSTOMER {df.customer_names.tolist()[i]}</p><p align='center'>ORDER PRICE {df.order_price.tolist()[i]}</p><p align='center'>TIMESTAMP {df.completed.tolist()[i]}</p><p align='center'>PAYMENT METHOD {paid_with_cash_app_lst[i]}</p><br></br>"
 
-    return df
+    return return_me
 
 #check user for missing skus
 def check_for_new_items(user):
