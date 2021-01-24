@@ -104,7 +104,7 @@ def user_orders_post_handler(user,token):
         if list(request.form.keys())[0] == 'log':
             df = pandas.read_sql(f'select * from {user}_orders',con=conn)
             df.set_index("order_id",inplace=True)
-            df.drop('line_items',axis=1,inplace=True)
+            #df.drop('line_items',axis=1,inplace=True)
             return "log",df
 
 
