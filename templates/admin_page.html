@@ -16,13 +16,13 @@
             <h1>Driver Summaries</h1>
             <form action='#' method="POST">
                 <label>Select driver</label>
-                <select name="users" id=users>
+                <select name="users" id="users" style="width:200px;">
                     {% for user in usernames %}
                     <option value="{{ user }}">{{ user }}</option>
                     {% endfor %}
                 </select>
                 <label>Start Date</label>
-                <input type="date" id="start" name="trip-start" value="{{ today }}}" min="2021-01-01" max="2022-01-01">
+                <input type="date" id="start" name="trip-start" value="{{ today }}" min="2021-01-01" max="2022-01-01">
                 <label>End Date</label>
                 <input type="date" id="end" name="trip-end" value="{{ today }}" min="2021-01-01" max="2022-01-01">
                 <button class="btn btn-primary btn-sm" type="submit" >Submit</button>
