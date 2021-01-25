@@ -635,7 +635,7 @@ def collect_option_value(sku):
 #collect coordinates for all customers in USER orders
 def order_coords(user):
     df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-    customer_data = [ (json.loads(i.replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
+    customer_data = [ (json.loads(i.replace("None","''").replace(r"'" ,r'"' ))["latitude"], json.loads(i.replace("None","''").replace(r"'" ,r'"' ))["longitude"]) for i in df.loc[df.fulfillment_status == "UNFULFILLED", "customer_data"].tolist()]
 
     customer_data.sort()
     
