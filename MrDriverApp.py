@@ -682,3 +682,17 @@ def cash_app_update(user,item):
     user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = True
     user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
     return "<h1>Marked with CashAPP</h1>"
+
+#collect names and quantities from line items string
+def collect_line_items_from_order(line_item_list_str):
+    new_list = line_item_list_str.split(":")
+    line_items_dict = {"name":[],"quantity":[],"sku":[]}
+    for i in range(len(new_list)):
+        if "{'name'" in new_list[i]:
+            line_items_dict["name"].append(new_list[i+1].replace("'id'",'').replace(",",'').replace("'",'').strip())
+        if "quantity" in new_list[i]:
+            line_items_dict["quantity"].append(int(new_list[i+1].replace(", 'sku'",'')))
+        if "sku" in new_list[i]:
+            line_items_dict["sku"].append(new_list[i+1].replace(", 'vendor'",'').replace("'",'').strip())
+
+    return line_items_dict
