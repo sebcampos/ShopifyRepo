@@ -36,12 +36,10 @@ def apple_touch_icon():
     return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'apple-touch-icon.png', mimetype='image/vnd.microsoft.icon')
 
 #reset_shopify_session
-@app.route('/refreshshopifysession')
+@app.route('/resetapp')
 def run_reset():
-    attempt = reset_shopify_session()
-    if attempt == True:
-        return "session refreshed"
-    return "failed"
+    os.kill(os.getpid(), signal.SIGINT)
+    return "refreshed"
 
 #Nav Bar
 @nav.navigation('nav_bar')

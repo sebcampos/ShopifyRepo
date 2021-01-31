@@ -22,6 +22,7 @@ import twilio_config
 from splinter import Browser
 import requests
 import re
+import signal
 
 
 #today date string:
