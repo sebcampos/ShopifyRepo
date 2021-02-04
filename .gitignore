@@ -3,3 +3,4 @@ Shopify_config.py
 __pycache__
 notes.md
 twilio_config.py
+*.ipynb
