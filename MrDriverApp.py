@@ -578,9 +578,9 @@ def update_user_inventory_sale(line_items,user,check=False):
             if i in df.sku.tolist():
                 quantity = sku_quantity_dict[i]
                 if df.loc[df.sku == i, "inventory_quantity"].item() >= quantity:
-                    new_dict[df.loc[df.sku == i, "display_name"].item()] = True
+                    new_dict[df.loc[df.sku == i, "display_name"].item()] = [True, quantity, df.loc[df.sku == i, "inventory_quantity"].item()]
                 else:
-                    new_dict[df.loc[df.sku == i, "display_name"].item()] = "False"
+                    new_dict[df.loc[df.sku == i, "display_name"].item()] = ["False", quantity, df.loc[df.sku == i, "inventory_quantity"].item()]
             elif i not in df.sku.tolist():
                 new_dict["VARIANT"] = "sku has no Title"
         return new_dict
