@@ -209,7 +209,7 @@ def admin_page_post_handler():
 def get_usernames():
     username_lst = pandas.read_sql("select username from users", con=conn).values.tolist()
 
-    username_lst = [i[0] for i in username_lst]
+    username_lst = [i[0] for i in username_lst if i[0] != "admin"]
 
     return username_lst
 
@@ -358,6 +358,10 @@ def items_data_call(update = False):
         os.system("mv ~/Downloads/products_export_1.csv .")
         raw_df = pandas.read_csv("products_export_1.csv")
         raw_df.to_sql("items_data",con=conn, index=False, if_exists='replace')
+        get_usernames()
+        for i in get_usernames():
+            update_user_items(i)
+
     
     else:
         raw_df = pandas.read_csv("products_export_1.csv")
@@ -382,7 +386,6 @@ def items_data_call(update = False):
     inventory_df.dropna(how="all",inplace=True)
 
     #add titles to the untitled variant skus by handles
-    print(raw_df.dropna())
     inventory_df["display_name"] = inventory_df.display_name.apply(lambda x: "None" if type(x) != str else x)
     empty_skus = inventory_df.loc[inventory_df.display_name == "None", "sku"].tolist()
     sku_and_handles_dict = {i:raw_df.loc[raw_df["Variant-SKU"] == i,"Handle"].item() for i in empty_skus}
@@ -614,13 +617,16 @@ def driver_week_summary(username,dates):
 
     return return_me
 
-#check user for missing skus
-def check_for_new_items(user):
+#check and update user for missing skus
+def update_user_items(user):
     inventory_df = items_data_call()
     user_inventory = pandas.read_sql(f"select * from {user}", con=conn)
-    lst_tups = list(zip(inventory_df.display_name.tolist(),inventory_df.sku.tolist()))
-    lst_tups2 = list(zip(user_inventory.display_name.tolist(),user_inventory.sku.tolist()))
-    return [i for i in lst_tups if i not in lst_tups2 and type(i[0]) == float and type(i[1]) == str]
+    updated_me_skus = [i for i in inventory_df.sku.tolist() if i not in user_inventory.sku.tolist()]
+    if updated_me_skus == []:
+        return "no new skus found"
+    for i in updated_me_skus:
+        inventory_df.loc[inventory_df.sku == i].to_sql(f"{user}", if_exists="append", index=False, con=conn)
+
 
 #check the option value of a given sku
 def collect_option_value(sku):
