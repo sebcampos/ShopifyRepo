@@ -36,9 +36,9 @@ def apple_touch_icon():
     return send_from_directory(os.path.join(app.root_path,'favicon_io'), 'apple-touch-icon.png', mimetype='image/vnd.microsoft.icon')
 
 #reset_shopify_session
-@app.route('/shutdown')
+@app.route('/reset')
 def run_reset():
-    os.kill(os.getpid(), signal.SIGINT)
+    reset_shopify_session()
     return "shutoff"
 
 #Nav Bar
@@ -114,6 +114,7 @@ def user_orders_details():
     if user == False or token == False:
         return '<h1>refresh session</h1>'
     line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item = collect_user_order_details(user)
+    button_val = cash_app_update(user, item, check=True)
     if request.method == "POST":
         response = user_order_details_post_handler(user,item,graphQL_id,line_items,customer_info_dict,token, order_price)
         if response[0] == "cashapp":
@@ -125,7 +126,7 @@ def user_orders_details():
         if response[0] == 'route':
             return redirect(f"https://www.google.com/maps/dir/?api=1&destination={response[1]},{response[2]}&travelmode=driving&dir_action=navigate")
 
-    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict)
+    return render_template("user_order_details.html",id=item , lst=line_items_2, dict1=customer_info_dict, order_price=order_price,item_check_dict=item_check_dict,button_val = button_val)
 
 #Shopify Unfulfilled Orders
 @app.route("/todays_orders",methods=["GET","POST"])

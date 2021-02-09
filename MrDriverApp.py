@@ -120,10 +120,11 @@ def collect_user_order_details(user):
         option_sku_lst = [collect_option_value(i["node"]['sku']) for i in line_items]
         item_check_dict = update_user_inventory_sale(line_items,user,check=True)
         line_items_2 = list(zip(option_sku_lst,line_items))
+        if "VARIANT" in item_check_dict.keys():
+            del item_check_dict["VARIANT"]
         return  line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item
     except:
         line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item = [],[], {}, "  Order has been fulfilled or canceled", {},"null","item"
-
         return line_items, line_items_2, customer_info_dict, order_price, item_check_dict, graphQL_id, item
 
 
@@ -680,15 +681,24 @@ def check_for_claimed(df):
     return df
 
 #mark order as paid with cash app
-def cash_app_update(user,item):
+def cash_app_update(user,item, check=False):
     user_orders_df = pandas.read_sql(f"select * from {user}_orders",con=conn)
-    if user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"].item() == 1:
-        user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = None
+    cash_app_check = user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"].item()
+
+    if check == True:
+        if int(cash_app_check) == 1:
+            return "Mark as Cash"
+        if int(cash_app_check) != 1:
+            return "Mark as Cash app"
+
+    if  int(cash_app_check) == 1:
+        user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 0
         user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
         return "<h1>Marked as Cash</h1>"
-    user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = True
-    user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
-    return "<h1>Marked with CashAPP</h1>"
+    elif int(cash_app_check) != 1: 
+        user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 1
+        user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
+        return "<h1>Marked with CashAPP</h1>"
 
 #collect names and quantities from line items string
 def collect_line_items_from_order(line_item_list_str):
