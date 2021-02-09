@@ -605,13 +605,12 @@ def driver_week_summary(username,dates):
     df.paid_with_cash_app.fillna(0.0,inplace=True)
     df.paid_with_cash_app = df.paid_with_cash_app.apply(lambda x: float(x))
     df = df.loc[(pandas.to_datetime(df.completed) > pandas.to_datetime(dates[0])) & (pandas.to_datetime(df.completed) < pandas.to_datetime(dates[1]) + datetime.timedelta(days=1)) & (df.fulfillment_status == "FULFILLED")]
-
-    driver_estimate_pay = df.order_price.count() * 15
-    total_money_brought_in = df.loc[df.paid_with_cash_app < 1, "order_price"].sum()
+    total_cash_in = df.loc[df.paid_with_cash_app < 1, "order_price"].sum()
+    total_money_in = df.order_price.sum()
     paid_with_cash_app_lst = df.paid_with_cash_app.apply(lambda x: "CASH APP" if x == 1  else "COD").tolist()
     total_orders_delivered = df.completed.count()
     return_me = ""
-    return_me +=  f"<h2>Estimate Pay: {driver_estimate_pay}<br></br>Total Cash Collected: {total_money_brought_in}<br></br>Orders Delivered: {total_orders_delivered}</h2>"
+    return_me +=  f"<h2>Estimate Pay: {total_money_in * .15}<br></br>Total Cash Collected: {total_cash_in}<br></br>Orders Delivered: {total_orders_delivered}</h2>"
     return_me +=  f"<br></br><h3>Orders for {dates[0]} to {dates[1]}:</h3>"
     for i in range(len(df.completed.tolist())):
         return_me += f"<p align='center'>CUSTOMER {df.customer_names.tolist()[i]}</p><p align='center'>ORDER PRICE {df.order_price.tolist()[i]}</p><p align='center'>TIMESTAMP {df.completed.tolist()[i]}</p><p align='center'>PAYMENT METHOD {paid_with_cash_app_lst[i]}</p><br></br>"
@@ -686,19 +685,27 @@ def cash_app_update(user,item, check=False):
     cash_app_check = user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"].item()
 
     if check == True:
-        if int(cash_app_check) == 1:
-            return "Mark as Cash"
-        if int(cash_app_check) != 1:
+        try:
+            if int(cash_app_check) == 1:
+                return "Mark as Cash"
+            if int(cash_app_check) != 1:
+                return "Mark as Cash app"
+        except:
             return "Mark as Cash app"
 
-    if  int(cash_app_check) == 1:
-        user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 0
-        user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
-        return "<h1>Marked as Cash</h1>"
-    elif int(cash_app_check) != 1: 
-        user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 1
-        user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
-        return "<h1>Marked with CashAPP</h1>"
+    try:
+        if  int(cash_app_check) == 1:
+            user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 0
+            user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
+            return "<h1>Marked as Cash</h1>"
+        elif int(cash_app_check) != 1: 
+            user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 1
+            user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
+            return "<h1>Marked with CashAPP</h1>"
+    except:
+            user_orders_df.loc[user_orders_df.order_id == item, "paid_with_cash_app"] = 1
+            user_orders_df.to_sql(f"{user}_orders",if_exists='replace',con=conn,index=False)
+            return "<h1>Marked with CashAPP</h1>"
 
 #collect names and quantities from line items string
 def collect_line_items_from_order(line_item_list_str):
